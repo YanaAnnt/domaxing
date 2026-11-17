@@ -1,0 +1,39 @@
+name: Release desktop app
+
+# Push a tag like v1.0.0 to build the Windows installer and publish it as a GitHub Release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type-check
+        run: npm run lint
+
+      - name: Build installer
+        run: npm run desktop:build
+
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          [[ "$TAG" == v* ]] || TAG="v$(node -p "require('./package.json').version")"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Domaxing ${TAG}" --notes-file .github/release-notes.md
+          gh release upload "$TAG" dist-desktop/*.exe --clobber

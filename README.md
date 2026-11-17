@@ -10,6 +10,7 @@
 It reads your calendar, notices the exam, flight or interview coming up, and builds the preparation plan before you even think of it.
 
 [![Live demo](https://img.shields.io/badge/Live_demo-Open_the_app-7c5cff?style=for-the-badge&logo=googlechrome&logoColor=white)](https://YanaAnnt.github.io/domaxing/)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows_app-0078d4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/YanaAnnt/domaxing/releases/latest)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/YanaAnnt/domaxing/deploy.yml?branch=main&style=for-the-badge&label=deploy)](https://github.com/YanaAnnt/domaxing/actions/workflows/deploy.yml)
 
 ![Next.js](https://img.shields.io/badge/Next.js_15-000?logo=nextdotjs&logoColor=white)
@@ -20,8 +21,9 @@ It reads your calendar, notices the exam, flight or interview coming up, and bui
 ![Deno](https://img.shields.io/badge/Deno_Edge_Functions-000?logo=deno&logoColor=white)
 ![Claude](https://img.shields.io/badge/Claude_AI-d97757?logo=anthropic&logoColor=white)
 ![PWA](https://img.shields.io/badge/Installable_PWA-5a0fc8?logo=pwa&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron_desktop-47848f?logo=electron&logoColor=white)
 
-[**Try it**](#-try-it-in-10-seconds) · [**Engineering highlights**](#-engineering-highlights) · [**Features**](#-features) · [**Architecture**](#-architecture) · [**Run locally**](#-run-it-locally)
+[**Try it**](#-try-it-in-10-seconds) · [**Download**](https://github.com/YanaAnnt/domaxing/releases/latest) · [**Engineering highlights**](#-engineering-highlights) · [**Features**](#-features) · [**Architecture**](#-architecture) · [**Run locally**](#-run-it-locally)
 
 <br />
 
@@ -51,7 +53,8 @@ It does the same for flights, interviews, presentations, birthdays and deadlines
 
 - Opens with realistic sample data, so there is something to play with right away.
 - Runs in **Local Demo Mode**: everything stays in your browser, no account, no tracking. (The calendar assistant needs the cloud backend, see [Run it locally](#-run-it-locally).)
-- **Install it as a desktop or phone app**: in Chrome or Edge, click the install icon in the address bar. On iPhone, open it in Safari, then Share → *Add to Home Screen*. It launches in its own window and **keeps working offline**.
+- **Prefer a real desktop app?** [Download the Windows installer](https://github.com/YanaAnnt/domaxing/releases/latest). It installs like any other program, with a Start Menu entry and desktop shortcut, and works fully offline. *(The installer is not code-signed yet, so if SmartScreen appears, click **More info → Run anyway**.)*
+- **Or install the web app**: in Chrome or Edge, click the install icon in the address bar. On iPhone, open it in Safari, then Share → *Add to Home Screen*. It launches in its own window and **keeps working offline**.
 
 | Desktop, light | iPhone |
 |---|---|
@@ -71,7 +74,7 @@ The parts I am most proud of, and the problems behind them:
 | **Real-world calendars are messy** | ICS parsing with **timezones, DST and recurrence** (ical.js), Google Calendar API and Microsoft Graph, OAuth with **HMAC-signed state**, and an **SSRF guard** that rejects private-network feed URLs. |
 | **Background work without running a server** | `pg_cron` → `pg_net` → a Deno **Edge Function** every 5 minutes: reminders, nudges, daily briefings, calendar refresh and planning, all respecting **quiet hours and a daily push cap**. |
 | **Secrets must never reach the browser** | **Row Level Security** on every table, **column-level grants** that hide OAuth tokens and feed URLs, and all keys stored in **Supabase Vault**, readable only by the service role. |
-| **Ship anywhere, for free** | The whole frontend exports to **static HTML**. GitHub Actions type-checks, runs the tests and deploys to GitHub Pages on every push. A service worker makes it an **offline-capable PWA**. |
+| **One codebase, three platforms** | The whole frontend exports to **static HTML**. GitHub Actions type-checks, tests and deploys it to GitHub Pages on every push, a service worker makes it an **offline-capable PWA** for iPhone and desktop, and the same build is wrapped by **Electron** into a Windows installer that a tagged release builds and publishes automatically. |
 | **Correctness** | Planner, timezone/DST and ICS parser tests run in CI before every deploy. TypeScript runs in `strict` mode across the app and the edge function. |
 
 <br />
@@ -180,6 +183,7 @@ flowchart LR
 | Server logic | Supabase Edge Function in Deno: calendar sync, planner, AI, briefings, Web Push |
 | AI | Anthropic Claude with structured outputs, with a rule-based fallback |
 | Delivery | GitHub Actions → GitHub Pages, installable PWA with a service worker |
+| Desktop | Electron with a private `app://` origin and a sandboxed renderer, packaged by electron-builder into an NSIS installer |
 
 <br />
 
@@ -199,6 +203,8 @@ Open http://localhost:3000. With no configuration the app starts in **Local Demo
 | `npm run dev` | Development server |
 | `npm run build` / `npm start` | Production build and server |
 | `STATIC_EXPORT=1 npm run build` | Static site in `out/` (what GitHub Pages serves) |
+| `npm run desktop` | Build and open the desktop app (its data stays in `.desktop/` inside the project) |
+| `npm run desktop:build` | Windows installer in `dist-desktop/` |
 | `npm run lint` | Type-check the app |
 | `npx tsc -p supabase/functions/tsconfig.json` | Type-check the edge function |
 | `node scripts/test-planner.ts` | Planner, timezone and ICS parser tests |
@@ -246,9 +252,12 @@ supabase/
   schema.sql              Tasks, categories, lists, RLS
   schema-v2-assistant.sql Assistant, calendars, push, Vault access, cron
   functions/tidy/         Edge function: calendar, ics, planner, ai, briefing, push, cron
+electron/
+  main.cjs                Desktop shell: app:// protocol, single instance, external links in the browser
 scripts/
   test-planner.ts         Planner, timezone and ICS tests
-.github/workflows/        Type-check → test → build → deploy to GitHub Pages
+  build-desktop.mjs       Static export + Windows installer
+.github/workflows/        deploy.yml: test → build → GitHub Pages · release-desktop.yml: tag → Windows installer
 ```
 
 <br />
@@ -270,7 +279,7 @@ scripts/
 
 ## 🔭 What's next
 
-- Native desktop builds (Tauri) on top of the existing static export
+- A code-signed installer with automatic updates, plus macOS and Linux builds
 - Two-way calendar sync, so approved prep sessions appear in your calendar too
 - Shared lists for families and study groups
 
