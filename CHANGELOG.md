@@ -10,6 +10,7 @@ Every pull request adds its change under **Unreleased**. When a version is tagge
 - Unit tests with Vitest for the planner, time zones and the ICS parser, and a CI workflow that type-checks, tests and builds every pull request ([#1](https://github.com/YanaAnnt/domaxing/pull/1)).
 - CodeQL security scanning of the code and the workflows, and weekly Dependabot updates for npm packages and GitHub Actions ([#2](https://github.com/YanaAnnt/domaxing/pull/2)).
 - A phased roadmap in the README, this changelog, and a pull request template ([#6](https://github.com/YanaAnnt/domaxing/pull/6)).
+- **AI settings** for bringing your own Anthropic API key: paste the key, choose Claude Opus 5.5 (recommended), Sonnet 5.5 or Haiku 5.5, and test the connection without spending tokens. The key is stored only on the device and is never synced or exported ([#8](https://github.com/YanaAnnt/domaxing/pull/8)).
 
 ### Changed
 - The deploy workflow runs `npm test` before publishing the site ([#1](https://github.com/YanaAnnt/domaxing/pull/1)).
