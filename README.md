@@ -286,36 +286,48 @@ scripts/
 
 ## 🗺 Roadmap
 
-Domaxing is growing into an **AI assistant you can talk to**: tell it your plans in your own words, add a training plan as text or a file, and it turns everything, together with your calendar, into tasks and reminders you approve. Each item ships as its own small pull request, and every release is recorded in the [changelog](CHANGELOG.md).
+Domaxing is growing into an **AI assistant you can talk to**: tell it your plans in your own words, run big projects with it, add a training plan as text or a file, and it turns everything, together with your calendar, into tasks and reminders you approve.
 
-**Phase 0: Foundations**
+**How work ships.** Every item below is its own small pull request that passes CI and updates this README and the [changelog](CHANGELOG.md). Items are grouped into versions that follow [Semantic Versioning](https://semver.org/). When a version is complete it is tagged (`v1.1.0`, …), which builds the Windows installer and publishes a [GitHub Release](https://github.com/YanaAnnt/domaxing/releases) whose notes come from the changelog.
+
+**v1.0.0: First release** (shipped)
+- [x] Tasks, lists, Today, Week, Progress, the Assistant, cloud sync and the Windows app
 - [x] Vitest suites and CI on every pull request ([#1](https://github.com/YanaAnnt/domaxing/pull/1))
 - [x] CodeQL security scanning and Dependabot updates ([#2](https://github.com/YanaAnnt/domaxing/pull/2))
 - [x] Public roadmap and changelog ([#6](https://github.com/YanaAnnt/domaxing/pull/6))
 
-**Phase 1: Chat assistant, with your own AI key**
+**v1.1.0: Talk to your assistant** (in progress)
 - [x] AI settings: paste your own Anthropic key, choose a Claude model, test the connection ([#8](https://github.com/YanaAnnt/domaxing/pull/8))
 - [ ] Chat with the assistant, with streamed replies and history saved on your device
 - [ ] The assistant can read your tasks, today's plan and your calendar
 - [ ] The assistant can create tasks and reminders, each one shown for your approval first
+- [ ] Daily brief: each morning the assistant sums up what today holds and what to do first
+- [ ] A collapsible **Completed** section at the bottom of every list and category
+- [ ] Week as a time grid: tasks sit at their time, and clicking an empty slot adds a task at that day and hour
 - [ ] Reminders as desktop and browser notifications
+- [ ] End-to-end tests with Playwright for the main flows, run in CI
 
-**Phase 2: Training plans**
+**v1.2.0: Projects**
+- [ ] Projects for big goals, such as a wedding, a home renovation, starting a business or a project at work, each with a deadline and a progress bar showing what is done and what is left
+- [ ] A project log: notes on what was done and who you spoke to, with each person kept as a contact on the project
+- [ ] Board and table views for a project's tasks (To do / Doing / Done)
+- [ ] Ready-made project templates, such as a wedding or a renovation
+- [ ] The assistant can plan a project from one sentence, such as "I'm getting married in June", into milestones and tasks you approve
+- [ ] Guest mode: try the assistant through a scripted conversation, no sign-up and no key
+
+**v1.3.0: Training plans**
 - [ ] Paste a training plan as text and preview the schedule it becomes
 - [ ] Upload a plan as a file: text, CSV, PDF or image
 - [ ] Workouts in Today and Week, with reminders and warnings when they clash with your calendar
 
-**Phase 3: Cloud**
+**v2.0.0: Cloud**
 - [ ] Chat in the cloud, with long-term memory and your connected calendars
-- [ ] Workout reminders pushed from the server, even when the app is closed
+- [ ] Reminders pushed from the server, even when the app is closed
 - [ ] The hosted demo connected to its own Supabase project
-
-**Phase 4: Demo and quality**
-- [ ] Guest mode: try the assistant through a scripted conversation, no sign-up and no key
-- [ ] End-to-end tests with Playwright
 - [ ] Lighthouse scores measured in CI and shown in this README
 
 **Later**
+- Voice: speak to the assistant and have the daily brief read aloud
 - A mobile app, with an optional paid plan that includes managed AI
 - A code-signed installer with automatic updates, plus macOS and Linux builds
 - Two-way calendar sync, so approved prep sessions appear in your calendar too
