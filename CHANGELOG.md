@@ -25,6 +25,7 @@ Every pull request adds its change under **Unreleased**. When a version is tagge
 
 ### Fixed
 - The development server failed to start on Next.js 16 because of a CSS selector in the Week view. Task titles in the week columns are now targeted with a `data-task-title` attribute ([#7](https://github.com/YanaAnnt/domaxing/pull/7)).
+- The opening phrase appeared fully drawn and then faded in a second time when the app loaded. The page and the app now play one entrance animation, and the app continues it from where the page got to ([#14](https://github.com/YanaAnnt/domaxing/pull/14)).
 
 ### Removed
 - `scripts/test-planner.ts`, replaced by the Vitest suites in `tests/` ([#1](https://github.com/YanaAnnt/domaxing/pull/1)).
