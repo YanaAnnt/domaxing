@@ -30,8 +30,8 @@ jobs:
       - name: Type-check
         run: npm run lint
 
-      - name: Planner and ICS tests
-        run: node scripts/test-planner.ts
+      - name: Unit tests
+        run: npm test
 
       - name: Build static site
         run: npm run build
