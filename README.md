@@ -14,7 +14,7 @@ It reads your calendar, notices the exam, flight or interview coming up, and bui
 [![CI](https://img.shields.io/github/actions/workflow/status/YanaAnnt/domaxing/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/YanaAnnt/domaxing/actions/workflows/ci.yml)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/YanaAnnt/domaxing/deploy.yml?branch=main&style=for-the-badge&label=deploy)](https://github.com/YanaAnnt/domaxing/actions/workflows/deploy.yml)
 
-![Next.js](https://img.shields.io/badge/Next.js_15-000?logo=nextdotjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js_16-000?logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React_19-149eca?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript_strict-3178c6?logo=typescript&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/Tailwind_4-0ea5e9?logo=tailwindcss&logoColor=white)
@@ -178,7 +178,7 @@ flowchart LR
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 15 (App Router, static export), React 19, TypeScript (strict), Tailwind CSS 4 |
+| Frontend | Next.js 16 (App Router, static export), React 19, TypeScript (strict), Tailwind CSS 4 |
 | State | Zustand with persistence, local-first sync engine |
 | UI building blocks | Radix UI (dialog, popover, dropdown), cmdk, dnd-kit, lucide icons, date-fns |
 | Backend | Supabase: Postgres, Row Level Security, Realtime, Auth, Vault, pg_cron, pg_net |
