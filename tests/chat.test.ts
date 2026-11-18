@@ -3,6 +3,20 @@ import { buildSystemPrompt, toApiMessages, type ChatMessage } from "../lib/ai/co
 import { useChat } from "../lib/ai/chat.ts";
 import { useAISettings } from "../lib/ai/settings.ts";
 
+// The tools read a fixed snapshot instead of the app's stores.
+vi.mock("../lib/ai/snapshot.ts", () => ({
+  readSnapshot: () => ({
+    today: "2026-11-18",
+    categories: [],
+    lists: [],
+    events: [],
+    calendarConnected: false,
+    tasks: [
+      { id: "t1", title: "Buy milk", notes: "", categoryId: null, listId: null, dueDate: "2026-11-18", dueTime: null, priority: 0, subtasks: [], recurrence: null, reminderAt: null, tags: [], completed: false, completedAt: null, order: 0, createdAt: "", updatedAt: "" },
+    ],
+  }),
+}));
+
 let n = 0;
 const msg = (role: ChatMessage["role"], text: string, error?: string): ChatMessage => ({
   id: String(++n),
@@ -47,16 +61,31 @@ describe("buildSystemPrompt", () => {
   });
 });
 
+type Block = { text: string[] } | { tool: { id: string; name: string; input: unknown } };
+
 /** A streamed Messages API response in server-sent events format. */
 function sseResponse(chunks: string[], stopReason = "end_turn") {
+  return sseBlocks([{ text: chunks }], stopReason);
+}
+
+function sseBlocks(blocks: Block[], stopReason: string) {
   const events: [string, unknown][] = [
     ["message_start", { type: "message_start", message: { id: "msg_1", type: "message", role: "assistant", model: "claude-opus-5-5", content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 10, output_tokens: 0 } } }],
-    ["content_block_start", { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } }],
-    ...chunks.map((text): [string, unknown] => ["content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } }]),
-    ["content_block_stop", { type: "content_block_stop", index: 0 }],
+  ];
+  blocks.forEach((b, index) => {
+    if ("text" in b) {
+      events.push(["content_block_start", { type: "content_block_start", index, content_block: { type: "text", text: "" } }]);
+      for (const text of b.text) events.push(["content_block_delta", { type: "content_block_delta", index, delta: { type: "text_delta", text } }]);
+    } else {
+      events.push(["content_block_start", { type: "content_block_start", index, content_block: { type: "tool_use", id: b.tool.id, name: b.tool.name, input: {} } }]);
+      events.push(["content_block_delta", { type: "content_block_delta", index, delta: { type: "input_json_delta", partial_json: JSON.stringify(b.tool.input) } }]);
+    }
+    events.push(["content_block_stop", { type: "content_block_stop", index }]);
+  });
+  events.push(
     ["message_delta", { type: "message_delta", delta: { stop_reason: stopReason, stop_sequence: null }, usage: { output_tokens: 5 } }],
     ["message_stop", { type: "message_stop" }],
-  ];
+  );
   const body = events.map(([event, data]) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`).join("");
   return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
 }
@@ -88,6 +117,29 @@ describe("useChat.send", () => {
     expect(sent.stream).toBe(true);
     expect(sent.messages).toEqual([{ role: "user", content: "Plan my Thursday" }]);
     expect(sent.system).toContain("Domaxing");
+  });
+
+  it("lets the assistant look at today's tasks and then answer", async () => {
+    useAISettings.setState({ apiKey: "sk-ant-api03-test-key-0000000000" });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(sseBlocks([{ text: ["Let me look."] }, { tool: { id: "toolu_1", name: "get_today", input: {} } }], "tool_use"))
+      .mockResolvedValueOnce(sseResponse(["Start with ", "Buy milk."]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await useChat.getState().send("What should I do today?");
+
+    const reply = useChat.getState().messages[1];
+    expect(reply).toMatchObject({ text: "Let me look.\n\nStart with Buy milk.", tools: ["get_today"] });
+    expect(reply.error).toBeUndefined();
+
+    const second = JSON.parse(String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body));
+    expect(second.tools.map((t: { name: string }) => t.name)).toEqual(["get_today", "list_tasks", "list_lists", "get_calendar"]);
+    expect(second.messages).toHaveLength(3);
+    expect(second.messages[1].role).toBe("assistant");
+    const result = second.messages[2].content[0];
+    expect(result).toMatchObject({ type: "tool_result", tool_use_id: "toolu_1" });
+    expect(JSON.parse(result.content).due_today).toEqual([{ title: "Buy milk", list: "Inbox", due: "2026-11-18" }]);
   });
 
   it("marks a reply that hit the token limit", async () => {
