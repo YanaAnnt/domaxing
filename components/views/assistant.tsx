@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/primitives";
 import { ViewBody, ViewHeader } from "./shared";
 import { AssistantSignIn, BriefingCard, CalendarConnectDialog, SuggestionCard } from "../assistant-ui";
+import { AssistantChat } from "../assistant-chat";
 
 export function AssistantView() {
   const signedIn = useSync((s) => !!s.user);
@@ -77,6 +78,8 @@ export function AssistantView() {
           )
         }
       />
+
+      <AssistantChat />
 
       {!signedIn ? (
         <AssistantSignIn />
