@@ -479,7 +479,9 @@ function WeekColumn({ date, tasks }: { date: string; tasks: Task[] }) {
         className={cn(
           "flex-1 [&_section]:mb-1 [&_[role=list]]:gap-1",
           "[&_[role=button]]:gap-2 [&_[role=button]]:bg-white/70 [&_[role=button]]:px-2 [&_[role=button]]:py-2 [&_[role=button]]:shadow-card dark:[&_[role=button]]:bg-white/[0.06]",
-          "[&_.text-\\[15px\\]]:text-[13px] [&_.text-\\[15px\\]]:leading-[18px]",
+          // Task titles are a little smaller in the narrow week columns. Targeting a data attribute instead of the
+          // escaped class name ".text-[15px]" keeps the generated CSS valid for the dev server's CSS parser.
+          "[&_[data-task-title]]:text-[13px] [&_[data-task-title]]:leading-[18px]",
           "[&_.truncate]:line-clamp-3 [&_.truncate]:whitespace-normal [&_.truncate]:break-words",
           diff < 0 && "opacity-75",
         )}
