@@ -12,6 +12,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "icons": "node scripts/gen-icons.mjs",
     "desktop": "node scripts/build-desktop.mjs --dir && electron . --data-dir=.desktop/data",
     "desktop:build": "node scripts/build-desktop.mjs"
@@ -47,6 +49,7 @@
     "postcss": "^8.5.33",
     "tailwindcss": "^4.3.5",
     "typescript": "5.8",
+    "vitest": "^5.1.1",
     "web-push": "^4.0.0"
   },
   "build": {

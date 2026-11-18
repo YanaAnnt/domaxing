@@ -11,6 +11,7 @@ It reads your calendar, notices the exam, flight or interview coming up, and bui
 
 [![Live demo](https://img.shields.io/badge/Live_demo-Open_the_app-7c5cff?style=for-the-badge&logo=googlechrome&logoColor=white)](https://YanaAnnt.github.io/domaxing/)
 [![Download for Windows](https://img.shields.io/badge/Download-Windows_app-0078d4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/YanaAnnt/domaxing/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/YanaAnnt/domaxing/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/YanaAnnt/domaxing/actions/workflows/ci.yml)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/YanaAnnt/domaxing/deploy.yml?branch=main&style=for-the-badge&label=deploy)](https://github.com/YanaAnnt/domaxing/actions/workflows/deploy.yml)
 
 ![Next.js](https://img.shields.io/badge/Next.js_15-000?logo=nextdotjs&logoColor=white)
@@ -75,7 +76,7 @@ The parts I am most proud of, and the problems behind them:
 | **Background work without running a server** | `pg_cron` → `pg_net` → a Deno **Edge Function** every 5 minutes: reminders, nudges, daily briefings, calendar refresh and planning, all respecting **quiet hours and a daily push cap**. |
 | **Secrets must never reach the browser** | **Row Level Security** on every table, **column-level grants** that hide OAuth tokens and feed URLs, and all keys stored in **Supabase Vault**, readable only by the service role. |
 | **One codebase, three platforms** | The whole frontend exports to **static HTML**. GitHub Actions type-checks, tests and deploys it to GitHub Pages on every push, a service worker makes it an **offline-capable PWA** for iPhone and desktop, and the same build is wrapped by **Electron** into a Windows installer that a tagged release builds and publishes automatically. |
-| **Correctness** | Planner, timezone/DST and ICS parser tests run in CI before every deploy. TypeScript runs in `strict` mode across the app and the edge function. |
+| **Correctness** | **Vitest** suites cover the planner, timezone/DST handling and the ICS parser. CI type-checks, tests and builds **every pull request** before it can be merged, and runs again before every deploy. TypeScript runs in `strict` mode across the app and the edge function. |
 
 <br />
 
@@ -182,6 +183,7 @@ flowchart LR
 | Backend | Supabase: Postgres, Row Level Security, Realtime, Auth, Vault, pg_cron, pg_net |
 | Server logic | Supabase Edge Function in Deno: calendar sync, planner, AI, briefings, Web Push |
 | AI | Anthropic Claude with structured outputs, with a rule-based fallback |
+| Testing and CI | Vitest, GitHub Actions on every pull request (type-check, tests, build) |
 | Delivery | GitHub Actions → GitHub Pages, installable PWA with a service worker |
 | Desktop | Electron with a private `app://` origin and a sandboxed renderer, packaged by electron-builder into an NSIS installer |
 
@@ -207,7 +209,8 @@ Open http://localhost:3000. With no configuration the app starts in **Local Demo
 | `npm run desktop:build` | Windows installer in `dist-desktop/` |
 | `npm run lint` | Type-check the app |
 | `npx tsc -p supabase/functions/tsconfig.json` | Type-check the edge function |
-| `node scripts/test-planner.ts` | Planner, timezone and ICS parser tests |
+| `npm test` | Unit tests (Vitest): planner, timezones, ICS parser |
+| `npm run test:watch` | Tests in watch mode while you work |
 
 <details>
 <summary><b>☁️ Enable cloud sync, the assistant and push notifications</b></summary>
@@ -254,10 +257,10 @@ supabase/
   functions/tidy/         Edge function: calendar, ics, planner, ai, briefing, push, cron
 electron/
   main.cjs                Desktop shell: app:// protocol, single instance, external links in the browser
+tests/                    Vitest suites: planner, time zones, ICS parser
 scripts/
-  test-planner.ts         Planner, timezone and ICS tests
   build-desktop.mjs       Static export + Windows installer
-.github/workflows/        deploy.yml: test → build → GitHub Pages · release-desktop.yml: tag → Windows installer
+.github/workflows/        ci.yml: checks every PR · deploy.yml: main → GitHub Pages · release-desktop.yml: tag → Windows installer
 ```
 
 <br />
