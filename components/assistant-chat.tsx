@@ -18,8 +18,8 @@ import { Orb } from "./assistant-ui";
 /** The assistant's name in the chat. */
 const ASSISTANT_NAME = "Max";
 
-/** The same staggered entrance as the opening phrase. */
-const rise = (delay: number) => ({ animation: `splash-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) ${delay}s both` }) as React.CSSProperties;
+/** A slow, staggered entrance in the style of the opening phrase: each line rises and sharpens in turn. */
+const rise = (delay: number) => ({ animation: `splash-rise 1.4s cubic-bezier(0.3, 0.55, 0.25, 1) ${delay}s both` }) as React.CSSProperties;
 
 /**
  * Chat with the assistant through the user's own Anthropic key. Fills the whole main area: a slim top bar,
@@ -83,24 +83,24 @@ export function AssistantChat({ toolbar }: { toolbar?: React.ReactNode }) {
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" aria-live="polite">
         {empty ? (
           <div className="flex min-h-full flex-col items-center justify-center px-6 pb-10 text-center">
-            <div style={rise(0)} className="mb-8">
+            <div style={rise(0.15)} className="mb-8">
               <Orb kind="other" size={56} />
             </div>
             <h2 className="text-[38px] font-semibold leading-[1.08] tracking-[-0.04em] sm:text-[52px]">
-              <span style={rise(0.1)} className="block text-fg/45">
+              <span style={rise(0.45)} className="block text-fg/45">
                 Hey, I&apos;m {ASSISTANT_NAME}.
               </span>
               <span
-                style={rise(0.35)}
+                style={rise(1.0)}
                 className="block bg-gradient-to-r from-[var(--c-accent)] via-[color-mix(in_oklab,var(--c-accent)_70%,#e05a9a)] to-[color-mix(in_oklab,var(--c-accent)_55%,#e08a3c)] bg-clip-text text-transparent"
               >
                 Let&apos;s max your day.
               </span>
             </h2>
-            <p style={rise(0.6)} className="mt-6 text-[12px] font-semibold uppercase tracking-[0.3em] text-muted">
+            <p style={rise(1.6)} className="mt-6 text-[12px] font-semibold uppercase tracking-[0.3em] text-muted">
               What&apos;s on your mind?
             </p>
-            <div style={rise(0.8)} className="mt-8 flex flex-col items-center gap-2">
+            <div style={rise(1.95)} className="mt-8 flex flex-col items-center gap-2">
               {apiKey ? (
                 <>
                   <Button variant="primary" className="h-11 rounded-full px-6 text-[15px]" onClick={() => send(BRIEF_PROMPT)}>
