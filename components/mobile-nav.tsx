@@ -23,15 +23,22 @@ export function MobileTabBar() {
   const view = useUI((s) => s.view);
   const counts = useCounts();
   const suggestions = useAssistant((s) => s.suggestions.length);
+  const isActive = (t: (typeof TABS)[number]) =>
+    t.view ? (t.view.type === "browse" ? BROWSE_TYPES.includes(view.type) : view.type === t.view.type) : false;
+  const activeIndex = TABS.findIndex(isActive);
   return (
     <nav aria-label="Main" className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),10px)] md:hidden">
-      <div className="glass-strong pointer-events-auto mx-auto flex h-[62px] max-w-md items-stretch rounded-full px-1.5">
+      <div className="glass-strong pointer-events-auto relative mx-auto flex h-[62px] max-w-md items-stretch rounded-full px-1.5">
+        {/* A glass bubble that glides to the active tab, stretching a little as it moves. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-1.5 left-1.5 w-[calc((100%-12px)/5)] transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.3,1.25,0.45,1)]"
+          style={{ transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`, opacity: activeIndex < 0 ? 0 : 1 }}
+        >
+          <span key={activeIndex} className="tab-glass block h-full w-full rounded-full animate-tab-squish" />
+        </span>
         {TABS.map((t) => {
-          const active = t.view
-            ? t.view.type === "browse"
-              ? BROWSE_TYPES.includes(view.type)
-              : view.type === t.view.type
-            : false;
+          const active = isActive(t);
           const badge = t.label === "Today" ? counts.today : t.label === "Assistant" ? suggestions : 0;
           return (
             <button
@@ -42,7 +49,10 @@ export function MobileTabBar() {
                 else useUI.getState().setCommandOpen(true);
               }}
               aria-current={active ? "page" : undefined}
-              className={cn("relative my-1.5 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-all", active ? "bg-accent-soft text-accent" : "text-muted")}
+              className={cn(
+                "relative z-10 my-1.5 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-[color,transform] duration-300 active:scale-95",
+                active ? "text-accent" : "text-muted",
+              )}
             >
               <span className="relative">
                 <t.icon className="size-[21px]" strokeWidth={active ? 2.3 : 1.9} />

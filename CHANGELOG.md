@@ -16,6 +16,7 @@ Every pull request adds its change under **Unreleased**. When a version is tagge
 - The assistant is now **Max**, with a clean welcome screen and a **Brief me** button: a short brief of today, the load on the days ahead and what to prepare for in the next three months. The calendar tool now covers up to 120 days ([#12](https://github.com/YanaAnnt/domaxing/pull/12)).
 
 ### Changed
+- On phones, the active tab in the bottom bar is marked by a **glass bubble** that glides to the tab you tap, stretching a little on the way, in light and dark mode ([#16](https://github.com/YanaAnnt/domaxing/pull/16)).
 - The roadmap is organised by version (v1.1.0 to v2.0.0), with Projects, a daily brief, a Completed section and a Week time grid added to the plan ([#9](https://github.com/YanaAnnt/domaxing/pull/9)).
 - The deploy workflow runs `npm test` before publishing the site ([#1](https://github.com/YanaAnnt/domaxing/pull/1)).
 - Next.js 15 → 16, with `tsconfig.json` updated for the new JSX transform ([#4](https://github.com/YanaAnnt/domaxing/pull/4)).
