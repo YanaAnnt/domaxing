@@ -125,7 +125,7 @@ describe("get_calendar", () => {
 
   it("checks the range and says when no calendar is connected", () => {
     expect(run("get_calendar", { from: "2026-11-20", to: "2026-11-19" })).toMatchObject({ isError: true });
-    expect(run("get_calendar", { from: "2026-11-01", to: "2027-03-01" })).toMatchObject({ isError: true, content: "The range can be at most 60 days." });
+    expect(run("get_calendar", { from: "2026-11-01", to: "2027-04-01" })).toMatchObject({ isError: true, content: "The range can be at most 120 days." });
     expect(run("get_calendar", {}, { ...snap, calendarConnected: false }).data.note).toContain("No calendar is connected");
   });
 });

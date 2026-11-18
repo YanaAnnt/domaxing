@@ -75,7 +75,7 @@ export const TOOLS: Anthropic.Tool[] = [
   {
     name: "get_calendar",
     description:
-      "Get events from the user's connected calendars between two dates (at most 60 days apart). Defaults to the next 14 days. Says so if no calendar is connected.",
+      "Get events from the user's connected calendars between two dates (at most 120 days apart). Defaults to the next 14 days. Says so if no calendar is connected.",
     input_schema: {
       type: "object",
       properties: { from: DATE, to: DATE },
@@ -238,7 +238,7 @@ function getCalendar(input: unknown, snap: Snapshot) {
   const from = optDate(i, "from") ?? snap.today;
   const to = optDate(i, "to") ?? format(addDays(parseISO(from), 13), "yyyy-MM-dd");
   if (to < from) throw new InputError("to must be on or after from.");
-  if (differenceInCalendarDays(parseISO(to), parseISO(from)) > 60) throw new InputError("The range can be at most 60 days.");
+  if (differenceInCalendarDays(parseISO(to), parseISO(from)) > 120) throw new InputError("The range can be at most 120 days.");
   if (!snap.calendarConnected) return { from, to, events: [], note: "No calendar is connected. The user can connect one in the Assistant view (requires signing in)." };
   return { from, to, events: eventsBetween(snap, from, to) };
 }

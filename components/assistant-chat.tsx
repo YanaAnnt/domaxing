@@ -2,21 +2,19 @@
 
 import * as React from "react";
 import Markdown, { type Components } from "react-markdown";
-import { AlertCircle, ArrowUp, KeyRound, MessageCircle, RotateCcw, Search, Square } from "lucide-react";
+import { AlertCircle, ArrowUp, KeyRound, RotateCcw, Search, Square, Sun } from "lucide-react";
 import { useChat } from "@/lib/ai/chat";
-import type { ChatMessage } from "@/lib/ai/conversation";
+import { BRIEF_PROMPT, type ChatMessage } from "@/lib/ai/conversation";
 import { modelById } from "@/lib/ai/models";
 import { useAISettings } from "@/lib/ai/settings";
 import { TOOL_LABELS } from "@/lib/ai/tools";
 import { useUI } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
 import { AutoTextarea, Button } from "./ui/primitives";
+import { Orb } from "./assistant-ui";
 
-const EXAMPLES = [
-  "What should I focus on today?",
-  "What's overdue, and what can wait?",
-  "I have an exam on Thursday. Help me plan my studying",
-];
+/** The assistant's name in the chat. */
+const ASSISTANT_NAME = "Max";
 
 /** Chat with the assistant through the user's own Anthropic key. */
 export function AssistantChat() {
@@ -42,33 +40,30 @@ export function AssistantChat() {
 
   return (
     <section aria-label="Chat with the assistant" className="glass mb-10 flex flex-col overflow-hidden rounded-[22px]">
-      <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
-        <MessageCircle className="size-4 text-accent" />
-        <h2 className="text-[14px] font-semibold">Chat</h2>
-        <span className="text-xs text-faint">{modelById(model).name}</span>
-        {messages.length > 0 && (
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => useChat.getState().clear()}>
+      {messages.length > 0 && (
+        <div className="flex items-center gap-1 border-b border-line px-3 py-1.5">
+          <span className="px-1 text-[13px] font-semibold">{ASSISTANT_NAME}</span>
+          <span className="text-xs text-faint" title="Model in use">· {modelById(model).name}</span>
+          <Button variant="ghost" size="sm" className="ml-auto" disabled={streaming} onClick={() => send(BRIEF_PROMPT)}>
+            <Sun className="size-3.5" /> Brief
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => useChat.getState().clear()}>
             <RotateCcw className="size-3.5" /> New chat
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div ref={scrollRef} className="max-h-[min(60vh,560px)] min-h-40 overflow-y-auto px-4 py-4" aria-live="polite">
+      <div ref={scrollRef} className="max-h-[min(60vh,560px)] overflow-y-auto px-4 py-4" aria-live="polite">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-start gap-2">
-            <p className="text-sm text-muted">Tell me about your plans, and I&apos;ll help you turn them into tasks.</p>
-            <div className="flex flex-wrap gap-1.5">
-              {EXAMPLES.map((e) => (
-                <button
-                  key={e}
-                  type="button"
-                  onClick={() => send(e)}
-                  className="rounded-full border border-line px-3 py-1.5 text-left text-[13px] text-muted transition-colors hover:border-accent hover:text-fg"
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
+          <div className="flex flex-col items-center px-2 pb-2 pt-4 text-center">
+            <Orb kind="other" size={52} />
+            <h2 className="mt-3 text-[19px] font-semibold tracking-tight">Hey, I&apos;m {ASSISTANT_NAME}, your Domaxing buddy.</h2>
+            <p className="mt-1 text-sm text-muted">Big goals, busy weeks, tiny to-dos. Let&apos;s max them all.</p>
+            <p className="mt-3 text-[15px] font-medium">So, what are we maxing today?</p>
+            <Button variant="primary" className="mt-4 h-10 rounded-full px-5" onClick={() => send(BRIEF_PROMPT)}>
+              <Sun className="size-4" /> Brief me
+            </Button>
+            <p className="mt-2 text-xs text-faint">A quick look at today, the busy days ahead and what to prepare for.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -96,7 +91,7 @@ export function AssistantChat() {
               send(draft);
             }
           }}
-          placeholder="Message the assistant…"
+          placeholder={`What's on your mind? Tell ${ASSISTANT_NAME} your plans…`}
           aria-label="Message the assistant"
           className="max-h-40 min-h-10 flex-1 overflow-y-auto rounded-xl bg-sunken px-3 py-2.5 text-[15px] outline-none placeholder:text-faint focus:ring-3 focus:ring-accent/15"
         />

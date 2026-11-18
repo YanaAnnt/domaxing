@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildSystemPrompt, toApiMessages, type ChatMessage } from "../lib/ai/conversation.ts";
+import { BRIEF_PROMPT, buildSystemPrompt, toApiMessages, type ChatMessage } from "../lib/ai/conversation.ts";
 import { useChat } from "../lib/ai/chat.ts";
 import { useAISettings } from "../lib/ai/settings.ts";
 
@@ -58,6 +58,13 @@ describe("buildSystemPrompt", () => {
     const p = buildSystemPrompt(new Date(2026, 10, 18, 14, 5), "Asia/Jerusalem");
     expect(p).toContain("Wednesday, 18 November 2026, 14:05");
     expect(p).toContain("Asia/Jerusalem");
+  });
+
+  it("introduces Max and explains how to write a brief without claiming changes", () => {
+    const p = buildSystemPrompt(new Date(2026, 10, 18), "UTC");
+    expect(p).toContain("You are Max");
+    expect(p).toContain(`"${BRIEF_PROMPT}"`);
+    expect(p).toContain("Never claim you added");
   });
 });
 

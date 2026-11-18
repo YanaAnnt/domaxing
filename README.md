@@ -114,6 +114,7 @@ The parts I am most proud of, and the problems behind them:
 - **Daily briefing** on the Today screen, and optionally as a morning push notification
 - **"Break it down with AI"** turns any vague task into concrete steps you can pick from
 - **Respectful notifications** that arrive even when the app is closed (Web Push), with quiet hours and a daily cap
+- **Meet Max, your Domaxing buddy**: one tap on **Brief me** and Max sums up today, shows which days ahead are heavy or light, and points out what's coming that needs preparing, like an exam or a race, then asks before planning anything
 - **Chat with the assistant**: describe your plans in your own words, in any language, and the reply streams in as it is written. Ask "what should I focus on today?" and it looks at your tasks, lists and calendar before answering, showing what it looked at. It only reads; nothing changes without you. The conversation is saved on your device only, separately from your tasks
 - **Bring your own AI key**: paste an Anthropic API key in *Settings → AI assistant*, pick a model (Claude Opus 5.5 is recommended), and check it with one click. The key stays on your device and goes only to Anthropic, so there is no account and no Domaxing server involved
 
