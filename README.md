@@ -256,7 +256,7 @@ lib/
   store.ts, sync.ts       Local-first store and the Supabase sync engine
   parse.ts                Natural-language Quick Add parser
   assistant.ts            Assistant client: realtime, approvals, push subscription
-  ai/                     Bring-your-own-key AI: model list, key store, Anthropic client, chat, read-only tools
+  ai/                     Bring-your-own-key AI: model list, key store, Anthropic client, chat, tools and task suggestions
 supabase/
   schema.sql              Tasks, categories, lists, RLS
   schema-v2-assistant.sql Assistant, calendars, push, Vault access, cron
