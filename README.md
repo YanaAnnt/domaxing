@@ -114,6 +114,7 @@ The parts I am most proud of, and the problems behind them:
 - **Daily briefing** on the Today screen, and optionally as a morning push notification
 - **"Break it down with AI"** turns any vague task into concrete steps you can pick from
 - **Respectful notifications** that arrive even when the app is closed (Web Push), with quiet hours and a daily cap
+- **Bring your own AI key**: paste an Anthropic API key in *Settings → AI assistant*, pick a model (Claude Opus 5.5 is recommended), and check it with one click. The key stays on your device and goes only to Anthropic, so there is no account and no Domaxing server involved
 
 </details>
 
@@ -253,6 +254,7 @@ lib/
   store.ts, sync.ts       Local-first store and the Supabase sync engine
   parse.ts                Natural-language Quick Add parser
   assistant.ts            Assistant client: realtime, approvals, push subscription
+  ai/                     Bring-your-own-key AI: model list, on-device key store, Anthropic client
 supabase/
   schema.sql              Tasks, categories, lists, RLS
   schema-v2-assistant.sql Assistant, calendars, push, Vault access, cron
@@ -292,7 +294,7 @@ Domaxing is growing into an **AI assistant you can talk to**: tell it your plans
 - [x] Public roadmap and changelog ([#6](https://github.com/YanaAnnt/domaxing/pull/6))
 
 **Phase 1: Chat assistant, with your own AI key**
-- [ ] AI settings: choose a provider and model, paste your own key, test the connection
+- [x] AI settings: paste your own Anthropic key, choose a Claude model, test the connection ([#8](https://github.com/YanaAnnt/domaxing/pull/8))
 - [ ] Chat with the assistant, with streamed replies and history saved on your device
 - [ ] The assistant can read your tasks, today's plan and your calendar
 - [ ] The assistant can create tasks and reminders, each one shown for your approval first

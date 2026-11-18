@@ -13,6 +13,7 @@ import { notificationsSupported, requestNotificationPermission } from "@/lib/rem
 import { Button, Dialog, DialogContent, Input, Segmented } from "./ui/primitives";
 import { LogoMark } from "./logo";
 import { AssistantSection, CalendarsSection, NotificationsSection } from "./assistant-settings";
+import { AISection } from "./ai-settings";
 
 export function SettingsDialog() {
   const open = useUI((s) => s.settingsOpen);
@@ -102,6 +103,8 @@ export function SettingsDialog() {
               </div>
             )}
           </Section>
+
+          <AISection />
 
           {sync.user && (
             <>
