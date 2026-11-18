@@ -46,7 +46,7 @@ export function AISection() {
     <section>
       <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-faint">AI assistant</h3>
       <p className="mb-3 text-[13px] leading-relaxed text-muted">
-        Use your own Anthropic API key and the assistant works on this device for free, apart from what Anthropic charges you for usage.
+        Connect your own Anthropic API key to use the assistant without a Domaxing account. You pay Anthropic directly for what you use.
         The key is stored only on this device and is sent only to Anthropic.{" "}
         <a href={KEYS_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-accent hover:underline">
           Get a key <ExternalLink className="size-3" />
