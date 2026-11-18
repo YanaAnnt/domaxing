@@ -114,7 +114,7 @@ The parts I am most proud of, and the problems behind them:
 - **Daily briefing** on the Today screen, and optionally as a morning push notification
 - **"Break it down with AI"** turns any vague task into concrete steps you can pick from
 - **Respectful notifications** that arrive even when the app is closed (Web Push), with quiet hours and a daily cap
-- **Meet Max, your Domaxing buddy**: one tap on **Brief me** and Max sums up today, shows which days ahead are heavy or light, and points out what's coming that needs preparing, like an exam or a race, then asks before planning anything
+- **Meet Max, your Domaxing buddy**: one tap on **Brief me** and Max sums up today, shows which days ahead are heavy or light, and points out what's coming that needs preparing, like an exam or a race. When something needs preparing, Max drafts the tasks as cards: tap **Add** or **Skip** on each, or **Add all**. Nothing is added without you, and every choice can be undone
 - **Chat with the assistant**: describe your plans in your own words, in any language, and the reply streams in as it is written. Ask "what should I focus on today?" and it looks at your tasks, lists and calendar before answering, showing what it looked at. It only reads; nothing changes without you. The conversation is saved on your device only, separately from your tasks
 - **Bring your own AI key**: paste an Anthropic API key in *Settings → AI assistant*, pick a model (Claude Opus 5.5 is recommended), and check it with one click. The key stays on your device and goes only to Anthropic, so there is no account and no Domaxing server involved
 
@@ -256,7 +256,7 @@ lib/
   store.ts, sync.ts       Local-first store and the Supabase sync engine
   parse.ts                Natural-language Quick Add parser
   assistant.ts            Assistant client: realtime, approvals, push subscription
-  ai/                     Bring-your-own-key AI: model list, key store, Anthropic client, chat, read-only tools
+  ai/                     Bring-your-own-key AI: model list, key store, Anthropic client, chat, tools and task suggestions
 supabase/
   schema.sql              Tasks, categories, lists, RLS
   schema-v2-assistant.sql Assistant, calendars, push, Vault access, cron
@@ -302,7 +302,7 @@ Domaxing is growing into an **AI assistant you can talk to**: tell it your plans
 - [x] AI settings: paste your own Anthropic key, choose a Claude model, test the connection ([#8](https://github.com/YanaAnnt/domaxing/pull/8))
 - [x] Chat with the assistant, with streamed replies and history saved on your device ([#10](https://github.com/YanaAnnt/domaxing/pull/10))
 - [x] The assistant can read your tasks, today's plan and your calendar ([#11](https://github.com/YanaAnnt/domaxing/pull/11))
-- [ ] The assistant can create tasks and reminders, each one shown for your approval first
+- [x] The assistant can suggest tasks, each one shown as a card you add or skip ([#13](https://github.com/YanaAnnt/domaxing/pull/13))
 - [ ] Daily brief: each morning the assistant sums up what today holds and what to do first
 - [ ] A collapsible **Completed** section at the bottom of every list and category
 - [ ] Week as a time grid: tasks sit at their time, and clicking an empty slot adds a task at that day and hour

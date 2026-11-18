@@ -1,10 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BRIEF_PROMPT, buildSystemPrompt, toApiMessages, type ChatMessage } from "../lib/ai/conversation.ts";
+import { BRIEF_PROMPT, buildSystemPrompt, messageContent, toApiMessages, type ChatMessage, type Proposal } from "../lib/ai/conversation.ts";
 import { useChat } from "../lib/ai/chat.ts";
 import { useAISettings } from "../lib/ai/settings.ts";
 
-// The tools read a fixed snapshot instead of the app's stores.
+const data = vi.hoisted(() => ({ added: [] as { title: string }[], removed: [] as string[] }));
+
+// The tools read a fixed snapshot instead of the app's stores, and approved tasks are recorded here.
 vi.mock("../lib/ai/snapshot.ts", () => ({
+  addProposedTask: (t: { title: string }) => {
+    data.added.push(t);
+    return `task-${data.added.length}`;
+  },
+  removeTask: (id: string) => data.removed.push(id),
   readSnapshot: () => ({
     today: "2026-11-18",
     categories: [],
@@ -141,7 +148,7 @@ describe("useChat.send", () => {
     expect(reply.error).toBeUndefined();
 
     const second = JSON.parse(String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body));
-    expect(second.tools.map((t: { name: string }) => t.name)).toEqual(["get_today", "list_tasks", "list_lists", "get_calendar"]);
+    expect(second.tools.map((t: { name: string }) => t.name)).toEqual(["get_today", "list_tasks", "list_lists", "get_calendar", "propose_tasks"]);
     expect(second.messages).toHaveLength(3);
     expect(second.messages[1].role).toBe("assistant");
     const result = second.messages[2].content[0];
@@ -173,5 +180,104 @@ describe("useChat.send", () => {
     await useChat.getState().send("Hi");
     expect(fetchMock).not.toHaveBeenCalled();
     expect(useChat.getState().messages).toEqual([]);
+  });
+});
+
+describe("task suggestions", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    useChat.setState({ messages: [], streaming: false });
+    data.added.length = 0;
+    data.removed.length = 0;
+  });
+
+  const suggest = async () => {
+    useAISettings.setState({ apiKey: "sk-ant-api03-test-key-0000000000" });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        sseBlocks(
+          [
+            {
+              tool: {
+                id: "toolu_p",
+                name: "propose_tasks",
+                input: {
+                  tasks: [
+                    { title: "Review chapters 1-3", due_date: "2026-11-19", due_time: "18:00" },
+                    { title: "Long run 5k", due_date: "2026-11-21", repeat: "weekly", priority: "medium" },
+                  ],
+                },
+              },
+            },
+          ],
+          "tool_use",
+        ),
+      )
+      .mockResolvedValueOnce(sseResponse(["I've drafted two sessions."]));
+    vi.stubGlobal("fetch", fetchMock);
+    await useChat.getState().send("Plan my exam prep");
+    return fetchMock;
+  };
+
+  it("shows suggestions as pending cards without adding anything", async () => {
+    const fetchMock = await suggest();
+    const reply = useChat.getState().messages[1];
+    expect(reply.text).toBe("I've drafted two sessions.");
+    expect(reply.tools).toEqual([]);
+    expect(reply.proposals?.map((p) => [p.task.title, p.status])).toEqual([
+      ["Review chapters 1-3", "pending"],
+      ["Long run 5k", "pending"],
+    ]);
+    expect(reply.proposals?.[1].task).toMatchObject({ dueDate: "2026-11-21", recurrence: { freq: "weekly", interval: 1 }, priority: 2, place: "Inbox" });
+    expect(data.added).toEqual([]);
+
+    const second = JSON.parse(String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body));
+    expect(second.messages[2].content[0].content).toContain("Nothing has been added");
+  });
+
+  it("adds, skips and undoes one card at a time", async () => {
+    await suggest();
+    const id = useChat.getState().messages[1].id;
+    const [a, b] = useChat.getState().messages[1].proposals!;
+
+    useChat.getState().decide(id, a.id, "add");
+    useChat.getState().decide(id, b.id, "skip");
+    let ps = useChat.getState().messages[1].proposals!;
+    expect(ps.map((p) => p.status)).toEqual(["added", "skipped"]);
+    expect(ps[0].taskId).toBe("task-1");
+    expect(data.added.map((t) => t.title)).toEqual(["Review chapters 1-3"]);
+
+    useChat.getState().decide(id, a.id, "add"); // already added: nothing happens
+    expect(data.added).toHaveLength(1);
+
+    useChat.getState().decide(id, a.id, "undo");
+    ps = useChat.getState().messages[1].proposals!;
+    expect(ps[0]).toMatchObject({ status: "pending", taskId: undefined });
+    expect(data.removed).toEqual(["task-1"]);
+  });
+
+  it("adds every pending card with Add all", async () => {
+    await suggest();
+    const m = useChat.getState().messages[1];
+    useChat.getState().decide(m.id, m.proposals![0].id, "skip");
+    useChat.getState().addAll(m.id);
+    expect(useChat.getState().messages[1].proposals!.map((p) => p.status)).toEqual(["skipped", "added"]);
+    expect(data.added.map((t) => t.title)).toEqual(["Long run 5k"]);
+  });
+});
+
+describe("messageContent", () => {
+  it("tells the model what the user did with each suggestion", () => {
+    const p = (title: string, status: Proposal["status"], dueDate: string | null = null): Proposal => ({
+      id: title,
+      status,
+      task: { title, notes: "", dueDate, dueTime: null, listId: null, categoryId: null, place: "Inbox", priority: 0, recurrence: null },
+    });
+    const m: ChatMessage = { ...msg("assistant", "Here's a plan."), proposals: [p("Study", "added", "2026-11-19"), p("Run", "skipped"), p("Rest", "pending")] };
+    expect(messageContent(m)).toBe(
+      'Here\'s a plan.\n\n[Task suggestions shown as cards, and what the user did:]\n- "Study" (2026-11-19): added\n- "Run": skipped\n- "Rest": not decided yet',
+    );
+    expect(toApiMessages([msg("user", "Plan it"), { ...m, text: "" }])[1].content).toContain('"Study" (2026-11-19): added');
   });
 });

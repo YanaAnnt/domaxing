@@ -1,15 +1,16 @@
 "use client";
 
 // Chat with the assistant using the user's own Anthropic key. Replies stream in as they are written.
-// The assistant can call read-only tools to look at the user's tasks and calendar (see ./tools).
+// The assistant can call read-only tools to look at the user's tasks and calendar, and suggest tasks that the
+// user adds or skips one by one (see ./tools). Nothing is added without the user tapping Add.
 // The history is saved on this device only, separately from the task data, so it is never synced or exported.
 import Anthropic from "@anthropic-ai/sdk";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createClient, describeError } from "./client";
-import { buildSystemPrompt, toApiMessages, type ChatMessage } from "./conversation";
+import { buildSystemPrompt, toApiMessages, type ChatMessage, type Proposal } from "./conversation";
 import { useAISettings } from "./settings";
-import { readSnapshot } from "./snapshot";
+import { addProposedTask, readSnapshot, removeTask } from "./snapshot";
 import { TOOLS, runTool, type ToolName } from "./tools";
 
 /** Messages kept on the device. Older ones are dropped when the history grows past this. */
@@ -26,6 +27,10 @@ interface ChatState {
   send: (text: string) => Promise<void>;
   stop: () => void;
   clear: () => void;
+  /** Add or skip a suggested task, or undo that choice. */
+  decide: (messageId: string, proposalId: string, action: "add" | "skip" | "undo") => void;
+  /** Add every suggestion in a reply that is still waiting for a decision. */
+  addAll: (messageId: string) => void;
 }
 
 let current: { abort: () => void } | null = null;
@@ -104,18 +109,25 @@ export const useChat = create<ChatState>()(
 
             turn.push({ role: "assistant", content: message.content });
             const snapshot = readSnapshot();
+            const proposals: Proposal[] = [];
             const results: Anthropic.ToolResultBlockParam[] = calls.map((call) => {
               const out = runTool(call.name, call.input, snapshot);
+              for (const task of out.proposals ?? []) proposals.push({ id: crypto.randomUUID(), task, status: "pending" });
               return { type: "tool_result", tool_use_id: call.id, content: out.content, ...(out.isError ? { is_error: true } : {}) };
             });
-            patch((m) => ({ tools: [...new Set([...(m.tools ?? []), ...calls.map((c) => c.name as ToolName)])] }));
+            // Lookups show as small labels; suggestions show as cards instead.
+            const looked = calls.map((c) => c.name as ToolName).filter((n) => n !== "propose_tasks");
+            patch((m) => ({
+              tools: [...new Set([...(m.tools ?? []), ...looked])],
+              ...(proposals.length ? { proposals: [...(m.proposals ?? []), ...proposals] } : {}),
+            }));
             turn.push({ role: "user", content: results });
           }
           patch(() => ({ error: "The assistant needed too many steps for this reply. Try asking in a simpler way." }));
         } catch (e) {
           if (e instanceof Anthropic.APIUserAbortError) {
-            // Stopped by the user: keep what was written so far, or drop the empty bubble.
-            set((s) => ({ messages: s.messages.filter((m) => m.id !== reply.id || m.text.trim()) }));
+            // Stopped by the user: keep what was written and suggested so far, or drop the empty bubble.
+            set((s) => ({ messages: s.messages.filter((m) => m.id !== reply.id || m.text.trim() || m.proposals?.length) }));
           } else {
             patch(() => ({ error: describeError(e) }));
           }
@@ -131,13 +143,35 @@ export const useChat = create<ChatState>()(
         current?.abort();
         set({ messages: [] });
       },
+
+      decide: (messageId, proposalId, action) => {
+        const p = get().messages.find((m) => m.id === messageId)?.proposals?.find((x) => x.id === proposalId);
+        if (!p) return;
+        let next: Partial<Proposal>;
+        if (action === "add" && p.status === "pending") next = { status: "added", taskId: addProposedTask(p.task) };
+        else if (action === "skip" && p.status === "pending") next = { status: "skipped" };
+        else if (action === "undo" && p.status !== "pending") {
+          if (p.taskId) removeTask(p.taskId);
+          next = { status: "pending", taskId: undefined };
+        } else return;
+        set((s) => ({
+          messages: s.messages.map((m) =>
+            m.id === messageId ? { ...m, proposals: m.proposals?.map((x) => (x.id === proposalId ? { ...x, ...next } : x)) } : m,
+          ),
+        }));
+      },
+
+      addAll: (messageId) => {
+        const pending = get().messages.find((m) => m.id === messageId)?.proposals?.filter((p) => p.status === "pending") ?? [];
+        for (const p of pending) get().decide(messageId, p.id, "add");
+      },
     }),
     {
       name: "domaxing-chat-v1",
       version: 1,
       // Only the history is saved. An empty reply left by a reload mid-stream is dropped.
       partialize: (s) => ({
-        messages: s.messages.filter((m) => m.role === "user" || m.text.trim() || m.error).slice(-STORED_MESSAGES),
+        messages: s.messages.filter((m) => m.role === "user" || m.text.trim() || m.error || m.proposals?.length).slice(-STORED_MESSAGES),
       }),
     },
   ),

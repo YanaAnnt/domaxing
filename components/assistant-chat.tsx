@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Markdown, { type Components } from "react-markdown";
-import { AlertCircle, ArrowUp, KeyRound, RotateCcw, Search, Square, Sun } from "lucide-react";
+import { AlertCircle, ArrowUp, Check, KeyRound, Plus, RotateCcw, Search, Square, Sun } from "lucide-react";
 import { useChat } from "@/lib/ai/chat";
-import { BRIEF_PROMPT, type ChatMessage } from "@/lib/ai/conversation";
+import { BRIEF_PROMPT, type ChatMessage, type Proposal } from "@/lib/ai/conversation";
+import { formatTime, recurrenceLabel, relativeLabel } from "@/lib/dates";
+import { PRIORITIES } from "@/lib/constants";
 import { modelById } from "@/lib/ai/models";
 import { useAISettings } from "@/lib/ai/settings";
 import { TOOL_LABELS } from "@/lib/ai/tools";
@@ -135,11 +137,86 @@ function Bubble({ m, typing }: { m: ChatMessage; typing: boolean }) {
       ) : (
         typing && <span className="inline-block animate-pulse text-sm text-muted">Thinking…</span>
       )}
+      {m.proposals && m.proposals.length > 0 && <Proposals m={m} busy={typing} />}
       {m.text && typing && <span className="ms-1 inline-block animate-pulse text-muted">●</span>}
       {m.error && (
         <p role="alert" className="mt-1 flex items-center gap-1.5 text-xs text-danger">
           <AlertCircle className="size-3.5 shrink-0" /> {m.error}
         </p>
+      )}
+    </div>
+  );
+}
+
+/** The tasks Max suggested in a reply, each with Add and Skip. Nothing is added until the user taps Add. */
+function Proposals({ m, busy }: { m: ChatMessage; busy: boolean }) {
+  const proposals = m.proposals ?? [];
+  const pending = proposals.filter((p) => p.status === "pending").length;
+  return (
+    <div className="mt-2.5 flex flex-col gap-1.5" aria-label="Suggested tasks">
+      {proposals.map((p) => (
+        <ProposalCard key={p.id} p={p} onDecide={(action) => useChat.getState().decide(m.id, p.id, action)} />
+      ))}
+      {pending > 1 && !busy && (
+        <Button variant="outline" size="sm" className="self-start" onClick={() => useChat.getState().addAll(m.id)}>
+          <Plus className="size-3.5" /> Add all {pending}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function ProposalCard({ p, onDecide }: { p: Proposal; onDecide: (action: "add" | "skip" | "undo") => void }) {
+  const t = p.task;
+  const meta = [
+    t.dueDate && relativeLabel(t.dueDate),
+    t.dueTime && formatTime(t.dueTime),
+    t.place,
+    t.recurrence && recurrenceLabel(t.recurrence),
+    t.priority >= 3 && `${PRIORITIES[t.priority].label} priority`,
+  ].filter(Boolean);
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-xl border border-line bg-elevated/60 px-3 py-2 transition-opacity",
+        p.status === "skipped" && "opacity-55",
+      )}
+    >
+      <span
+        className={cn(
+          "grid size-5 shrink-0 place-items-center rounded-full border",
+          p.status === "added" ? "border-success bg-success text-white" : "border-line-strong",
+        )}
+        style={p.status === "pending" && t.priority ? { borderColor: PRIORITIES[t.priority].color } : undefined}
+      >
+        {p.status === "added" && <Check className="size-3" strokeWidth={3} />}
+      </span>
+      <div dir="auto" className="min-w-0 flex-1">
+        <div className={cn("text-[14px] font-medium leading-snug", p.status === "skipped" && "line-through")}>{t.title}</div>
+        {meta.length > 0 && <div className="truncate text-xs text-muted">{meta.join(" · ")}</div>}
+      </div>
+      {p.status === "pending" ? (
+        <>
+          <Button variant="ghost" size="sm" onClick={() => onDecide("skip")}>
+            Skip
+          </Button>
+          <Button variant="primary" size="sm" onClick={() => onDecide("add")}>
+            <Plus className="size-3.5" /> Add
+          </Button>
+        </>
+      ) : (
+        <>
+          {p.status === "added" && p.taskId ? (
+            <Button variant="ghost" size="sm" className="text-success" onClick={() => useUI.getState().openDetail(p.taskId!)}>
+              Added · Edit
+            </Button>
+          ) : (
+            <span className="text-xs text-muted">Skipped</span>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => onDecide("undo")}>
+            Undo
+          </Button>
+        </>
       )}
     </div>
   );
