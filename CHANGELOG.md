@@ -13,6 +13,7 @@ Every pull request adds its change under **Unreleased**. When a version is tagge
 - **AI settings** for bringing your own Anthropic API key: paste the key, choose Claude Opus 5.5 (recommended), Sonnet 5.5 or Haiku 5.5, and test the connection without spending tokens. The key is stored only on the device and is never synced or exported ([#8](https://github.com/YanaAnnt/domaxing/pull/8)).
 
 ### Changed
+- The roadmap is organised by version (v1.1.0 to v2.0.0), with Projects, a daily brief, a Completed section and a Week time grid added to the plan ([#9](https://github.com/YanaAnnt/domaxing/pull/9)).
 - The deploy workflow runs `npm test` before publishing the site ([#1](https://github.com/YanaAnnt/domaxing/pull/1)).
 - Next.js 15 → 16, with `tsconfig.json` updated for the new JSX transform ([#4](https://github.com/YanaAnnt/domaxing/pull/4)).
 - GitHub Actions updated to their current major versions: checkout, setup-node, upload-pages-artifact and deploy-pages ([#3](https://github.com/YanaAnnt/domaxing/pull/3)).
