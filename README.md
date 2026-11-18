@@ -24,7 +24,7 @@ It reads your calendar, notices the exam, flight or interview coming up, and bui
 ![PWA](https://img.shields.io/badge/Installable_PWA-5a0fc8?logo=pwa&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron_desktop-47848f?logo=electron&logoColor=white)
 
-[**Try it**](#-try-it-in-10-seconds) · [**Download**](https://github.com/YanaAnnt/domaxing/releases/latest) · [**Engineering highlights**](#-engineering-highlights) · [**Features**](#-features) · [**Architecture**](#-architecture) · [**Run locally**](#-run-it-locally)
+[**Try it**](#-try-it-in-10-seconds) · [**Download**](https://github.com/YanaAnnt/domaxing/releases/latest) · [**Engineering highlights**](#-engineering-highlights) · [**Features**](#-features) · [**Architecture**](#-architecture) · [**Run locally**](#-run-it-locally) · [**Roadmap**](#-roadmap)
 
 <br />
 
@@ -282,8 +282,39 @@ scripts/
 
 <br />
 
-## 🔭 What's next
+## 🗺 Roadmap
 
+Domaxing is growing into an **AI assistant you can talk to**: tell it your plans in your own words, add a training plan as text or a file, and it turns everything, together with your calendar, into tasks and reminders you approve. Each item ships as its own small pull request, and every release is recorded in the [changelog](CHANGELOG.md).
+
+**Phase 0: Foundations**
+- [x] Vitest suites and CI on every pull request ([#1](https://github.com/YanaAnnt/domaxing/pull/1))
+- [x] CodeQL security scanning and Dependabot updates ([#2](https://github.com/YanaAnnt/domaxing/pull/2))
+- [x] Public roadmap and changelog ([#6](https://github.com/YanaAnnt/domaxing/pull/6))
+
+**Phase 1: Chat assistant, with your own AI key**
+- [ ] AI settings: choose a provider and model, paste your own key, test the connection
+- [ ] Chat with the assistant, with streamed replies and history saved on your device
+- [ ] The assistant can read your tasks, today's plan and your calendar
+- [ ] The assistant can create tasks and reminders, each one shown for your approval first
+- [ ] Reminders as desktop and browser notifications
+
+**Phase 2: Training plans**
+- [ ] Paste a training plan as text and preview the schedule it becomes
+- [ ] Upload a plan as a file: text, CSV, PDF or image
+- [ ] Workouts in Today and Week, with reminders and warnings when they clash with your calendar
+
+**Phase 3: Cloud**
+- [ ] Chat in the cloud, with long-term memory and your connected calendars
+- [ ] Workout reminders pushed from the server, even when the app is closed
+- [ ] The hosted demo connected to its own Supabase project
+
+**Phase 4: Demo and quality**
+- [ ] Guest mode: try the assistant through a scripted conversation, no sign-up and no key
+- [ ] End-to-end tests with Playwright
+- [ ] Lighthouse scores measured in CI and shown in this README
+
+**Later**
+- A mobile app, with an optional paid plan that includes managed AI
 - A code-signed installer with automatic updates, plus macOS and Linux builds
 - Two-way calendar sync, so approved prep sessions appear in your calendar too
 - Shared lists for families and study groups
