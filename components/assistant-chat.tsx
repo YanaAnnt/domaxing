@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Markdown, { type Components } from "react-markdown";
-import { AlertCircle, ArrowUp, Check, KeyRound, Plus, RotateCcw, Search, Square, Sun } from "lucide-react";
+import { AlertCircle, ArrowUp, Check, KeyRound, Menu as MenuIcon, Plus, Search, Square, SquarePen, Sun } from "lucide-react";
 import { useChat } from "@/lib/ai/chat";
 import { BRIEF_PROMPT, type ChatMessage, type Proposal } from "@/lib/ai/conversation";
 import { formatTime, recurrenceLabel, relativeLabel } from "@/lib/dates";
@@ -18,57 +18,108 @@ import { Orb } from "./assistant-ui";
 /** The assistant's name in the chat. */
 const ASSISTANT_NAME = "Max";
 
-/** Chat with the assistant through the user's own Anthropic key. */
-export function AssistantChat() {
+/** The same staggered entrance as the opening phrase. */
+const rise = (delay: number) => ({ animation: `splash-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) ${delay}s both` }) as React.CSSProperties;
+
+/**
+ * Chat with the assistant through the user's own Anthropic key. Fills the whole main area: a slim top bar,
+ * the conversation in a centred column, and the message box pinned to the bottom. `toolbar` is placed on the
+ * right of the top bar (the Chat / Planner switch).
+ */
+export function AssistantChat({ toolbar }: { toolbar?: React.ReactNode }) {
   const apiKey = useAISettings((s) => s.apiKey);
   const model = useAISettings((s) => s.model);
   const messages = useChat((s) => s.messages);
   const streaming = useChat((s) => s.streaming);
+  const sidebarOpen = useUI((s) => s.sidebarOpen);
   const [draft, setDraft] = React.useState("");
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const empty = messages.length === 0;
 
   React.useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  if (!apiKey) return <ConnectKey />;
-
   const send = (text: string) => {
-    if (!text.trim() || streaming) return;
+    if (!text.trim() || streaming || !apiKey) return;
     setDraft("");
     void useChat.getState().send(text);
   };
+  const openSettings = () => useUI.getState().setSettingsOpen(true);
 
   return (
-    <section aria-label="Chat with the assistant" className="glass mb-10 flex flex-col overflow-hidden rounded-[22px]">
-      {messages.length > 0 && (
-        <div className="flex items-center gap-1 border-b border-line px-3 py-1.5">
-          <span className="px-1 text-[13px] font-semibold">{ASSISTANT_NAME}</span>
-          <span className="text-xs text-faint" title="Model in use">· {modelById(model).name}</span>
-          <Button variant="ghost" size="sm" className="ml-auto" disabled={streaming} onClick={() => send(BRIEF_PROMPT)}>
-            <Sun className="size-3.5" /> Brief
+    <section aria-label="Chat with Max" className="absolute inset-0 flex flex-col">
+      <div className="flex h-14 shrink-0 items-center gap-1 px-3 md:px-5">
+        {!sidebarOpen && (
+          <Button variant="ghost" size="icon" className="hidden md:inline-flex" aria-label="Show sidebar" onClick={() => useUI.getState().setSidebarOpen(true)}>
+            <MenuIcon className="size-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => useChat.getState().clear()}>
-            <RotateCcw className="size-3.5" /> New chat
-          </Button>
+        )}
+        {!empty && (
+          <>
+            <Orb kind="other" size={26} />
+            <span className="ms-1.5 text-[14px] font-semibold">{ASSISTANT_NAME}</span>
+            <button type="button" onClick={openSettings} className="ms-1 hidden truncate text-xs text-faint hover:text-muted sm:inline" title="Change the model in Settings">
+              {modelById(model).name}
+            </button>
+          </>
+        )}
+        <div className="ms-auto flex items-center gap-1">
+          {!empty && (
+            <>
+              <Button variant="ghost" size="sm" disabled={streaming} onClick={() => send(BRIEF_PROMPT)}>
+                <Sun className="size-3.5" /> <span className="hidden sm:inline">Brief</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => useChat.getState().clear()} aria-label="New chat">
+                <SquarePen className="size-3.5" /> <span className="hidden sm:inline">New chat</span>
+              </Button>
+            </>
+          )}
+          {toolbar}
         </div>
-      )}
+      </div>
 
-      <div ref={scrollRef} className="max-h-[min(60vh,560px)] overflow-y-auto px-4 py-4" aria-live="polite">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center px-2 pb-2 pt-4 text-center">
-            <Orb kind="other" size={52} />
-            <h2 className="mt-3 text-[19px] font-semibold tracking-tight">Hey, I&apos;m {ASSISTANT_NAME}, your Domaxing buddy.</h2>
-            <p className="mt-1 text-sm text-muted">Big goals, busy weeks, tiny to-dos. Let&apos;s max them all.</p>
-            <p className="mt-3 text-[15px] font-medium">So, what are we maxing today?</p>
-            <Button variant="primary" className="mt-4 h-10 rounded-full px-5" onClick={() => send(BRIEF_PROMPT)}>
-              <Sun className="size-4" /> Brief me
-            </Button>
-            <p className="mt-2 text-xs text-faint">A quick look at today, the busy days ahead and what to prepare for.</p>
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" aria-live="polite">
+        {empty ? (
+          <div className="flex min-h-full flex-col items-center justify-center px-6 pb-10 text-center">
+            <div style={rise(0)} className="mb-8">
+              <Orb kind="other" size={56} />
+            </div>
+            <h2 className="text-[38px] font-semibold leading-[1.08] tracking-[-0.04em] sm:text-[52px]">
+              <span style={rise(0.1)} className="block text-fg/45">
+                Hey, I&apos;m {ASSISTANT_NAME}.
+              </span>
+              <span
+                style={rise(0.35)}
+                className="block bg-gradient-to-r from-[var(--c-accent)] via-[color-mix(in_oklab,var(--c-accent)_70%,#e05a9a)] to-[color-mix(in_oklab,var(--c-accent)_55%,#e08a3c)] bg-clip-text text-transparent"
+              >
+                Let&apos;s max your day.
+              </span>
+            </h2>
+            <p style={rise(0.6)} className="mt-6 text-[12px] font-semibold uppercase tracking-[0.3em] text-muted">
+              What&apos;s on your mind?
+            </p>
+            <div style={rise(0.8)} className="mt-8 flex flex-col items-center gap-2">
+              {apiKey ? (
+                <>
+                  <Button variant="primary" className="h-11 rounded-full px-6 text-[15px]" onClick={() => send(BRIEF_PROMPT)}>
+                    <Sun className="size-4" /> Brief me
+                  </Button>
+                  <p className="text-xs text-faint">Today, the busy days ahead, and what to get ready for.</p>
+                </>
+              ) : (
+                <>
+                  <Button variant="primary" className="h-11 rounded-full px-6 text-[15px]" onClick={openSettings}>
+                    <KeyRound className="size-4" /> Connect your AI key
+                  </Button>
+                  <p className="max-w-xs text-xs text-faint">Max runs on your own Anthropic key. It stays on this device, and there&apos;s no account to create.</p>
+                </>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="mx-auto flex max-w-[760px] flex-col gap-4 px-4 pb-6 pt-2 md:px-6">
             {messages.map((m) => (
               <Bubble key={m.id} m={m} typing={streaming && m === messages[messages.length - 1] && m.role === "assistant"} />
             ))}
@@ -76,37 +127,44 @@ export function AssistantChat() {
         )}
       </div>
 
-      <form
-        className="flex items-end gap-2 border-t border-line p-2.5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          send(draft);
-        }}
-      >
-        <AutoTextarea
-          dir="auto"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              send(draft);
-            }
+      {apiKey && (
+        <form
+          className="mx-auto w-full max-w-[760px] shrink-0 px-3 pb-[calc(max(env(safe-area-inset-bottom),10px)+80px)] pt-2 md:px-6 md:pb-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(draft);
           }}
-          placeholder={`What's on your mind? Tell ${ASSISTANT_NAME} your plans…`}
-          aria-label="Message the assistant"
-          className="max-h-40 min-h-10 flex-1 overflow-y-auto rounded-xl bg-sunken px-3 py-2.5 text-[15px] outline-none placeholder:text-faint focus:ring-3 focus:ring-accent/15"
-        />
-        {streaming ? (
-          <Button type="button" variant="subtle" size="icon" className="size-10 rounded-xl" aria-label="Stop" onClick={() => useChat.getState().stop()}>
-            <Square className="size-3.5 fill-current" />
-          </Button>
-        ) : (
-          <Button type="submit" variant="primary" size="icon" className="size-10 rounded-xl" aria-label="Send" disabled={!draft.trim()}>
-            <ArrowUp className="size-4" strokeWidth={2.4} />
-          </Button>
-        )}
-      </form>
+        >
+          <div
+            className="flex items-end gap-2 rounded-[22px] border border-line bg-elevated/80 p-1.5 shadow-card transition-shadow focus-within:border-accent/50 focus-within:ring-3 focus-within:ring-accent/12"
+            onClick={(e) => e.currentTarget.querySelector("textarea")?.focus()}
+          >
+            <AutoTextarea
+              dir="auto"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  send(draft);
+                }
+              }}
+              placeholder={`Tell ${ASSISTANT_NAME} your plans…`}
+              aria-label="Message Max"
+              className="max-h-40 min-h-10 flex-1 overflow-y-auto bg-transparent px-3 py-2.5 text-[15px] outline-none placeholder:text-faint"
+            />
+            {streaming ? (
+              <Button type="button" variant="subtle" size="icon" className="size-10 rounded-full" aria-label="Stop" onClick={() => useChat.getState().stop()}>
+                <Square className="size-3.5 fill-current" />
+              </Button>
+            ) : (
+              <Button type="submit" variant="primary" size="icon" className="size-10 rounded-full" aria-label="Send" disabled={!draft.trim()}>
+                <ArrowUp className="size-4" strokeWidth={2.4} />
+              </Button>
+            )}
+          </div>
+        </form>
+      )}
     </section>
   );
 }
@@ -238,20 +296,3 @@ const markdown: Components = {
   code: ({ node: _, ...p }) => <code className="rounded bg-sunken px-1 py-0.5 text-[13px]" {...p} />,
   pre: ({ node: _, ...p }) => <pre className="my-2 overflow-x-auto rounded-lg bg-sunken p-2.5 text-[13px] [&_code]:bg-transparent [&_code]:p-0" {...p} />,
 };
-
-function ConnectKey() {
-  return (
-    <section className="glass mb-10 flex items-center gap-4 rounded-[22px] p-5">
-      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent/12 text-accent">
-        <KeyRound className="size-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-medium">Chat with the assistant</div>
-        <p className="text-[13px] text-muted">Connect your own Anthropic API key in Settings to plan your days in conversation. No account needed.</p>
-      </div>
-      <Button variant="primary" size="sm" onClick={() => useUI.getState().setSettingsOpen(true)}>
-        Connect
-      </Button>
-    </section>
-  );
-}
