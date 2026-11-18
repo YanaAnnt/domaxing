@@ -16,6 +16,9 @@ Every pull request adds its change under **Unreleased**. When a version is tagge
 - Next.js 15 → 16, with `tsconfig.json` updated for the new JSX transform ([#4](https://github.com/YanaAnnt/domaxing/pull/4)).
 - GitHub Actions updated to their current major versions: checkout, setup-node, upload-pages-artifact and deploy-pages ([#3](https://github.com/YanaAnnt/domaxing/pull/3)).
 
+### Fixed
+- The development server failed to start on Next.js 16 because of a CSS selector in the Week view. Task titles in the week columns are now targeted with a `data-task-title` attribute ([#7](https://github.com/YanaAnnt/domaxing/pull/7)).
+
 ### Removed
 - `scripts/test-planner.ts`, replaced by the Vitest suites in `tests/` ([#1](https://github.com/YanaAnnt/domaxing/pull/1)).
 

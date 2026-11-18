@@ -132,7 +132,7 @@ export function TaskRowStatic({ task }: { task: Task }) {
         <TaskCheckbox checked={task.completed} priority={task.priority} onToggle={() => {}} label={task.title} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[15px] leading-5">{task.title}</div>
+        <div data-task-title className="truncate text-[15px] leading-5">{task.title}</div>
         <TaskMeta task={task} />
       </div>
     </div>
@@ -253,6 +253,7 @@ export const TaskItem = React.memo(function TaskItem({ task, ids, containerId, s
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span
+              data-task-title
               className={cn(
                 "min-w-0 flex-1 truncate text-[15px] leading-5 transition-colors duration-300",
                 task.completed && "text-faint line-through decoration-faint/60",
