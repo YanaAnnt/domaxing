@@ -1,9 +1,10 @@
-// Read-only tools the chat assistant can call to look at the user's tasks, lists, today's plan and calendar.
-// Everything runs in the browser against a snapshot of the local data. Nothing is changed.
+// Tools the chat assistant can call: read-only tools to look at the user's tasks, lists, today's plan and
+// calendar, and propose_tasks, which only drafts tasks for the user to add or skip. Nothing here changes data.
+// Everything runs in the browser against a snapshot of the local data.
 // Kept free of React and storage so it can be unit-tested.
 import type Anthropic from "@anthropic-ai/sdk";
 import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
-import type { Category, List, Task } from "../types";
+import type { Category, List, Priority, Recurrence, RecurrenceFreq, Task } from "../types";
 
 /** Calendar event fields the tools need (a subset of the assistant's CalEvent). */
 export interface SnapshotEvent {
@@ -25,15 +26,33 @@ export interface Snapshot {
   today: string;
 }
 
-export type ToolName = "get_today" | "list_tasks" | "list_lists" | "get_calendar";
+export type ToolName = "get_today" | "list_tasks" | "list_lists" | "get_calendar" | "propose_tasks";
 
-/** Short labels shown in the chat while and after the assistant looks something up. */
+/** Short labels shown in the chat for the tools the assistant used to look something up. */
 export const TOOL_LABELS: Record<ToolName, string> = {
   get_today: "Today's plan",
   list_tasks: "Your tasks",
   list_lists: "Your lists",
   get_calendar: "Your calendar",
+  propose_tasks: "Suggestions",
 };
+
+/** A task the assistant suggests, resolved against the user's lists and ready to add if they approve. */
+export interface ProposedTask {
+  title: string;
+  notes: string;
+  dueDate: string | null;
+  dueTime: string | null;
+  listId: string | null;
+  categoryId: string | null;
+  /** where it will go, as "Category / List", "Category" or "Inbox" */
+  place: string;
+  priority: Priority;
+  recurrence: Recurrence | null;
+}
+
+/** Most tasks one propose_tasks call may suggest, so the cards stay reviewable. */
+export const MAX_PROPOSALS = 15;
 
 const DATE = { type: "string", description: "A date as YYYY-MM-DD." } as const;
 
@@ -83,11 +102,46 @@ export const TOOLS: Anthropic.Tool[] = [
     },
     eager_input_streaming: true,
   },
+  {
+    name: "propose_tasks",
+    description:
+      "Suggest new tasks to the user. Each one is shown as a card with Add and Skip buttons, and nothing is added unless the user taps Add. Use it when the user asks for a plan, agrees to one, or when a brief finds something worth preparing for. Spread work over lighter days, use real dates, and keep titles short and specific.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tasks: {
+          type: "array",
+          minItems: 1,
+          maxItems: MAX_PROPOSALS,
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Short and specific, such as 'Review chapters 1-3 for Calculus 2'." },
+              notes: { type: "string", description: "Optional details, such as what to cover." },
+              due_date: { ...DATE, description: "The day to do it (YYYY-MM-DD), today or later." },
+              due_time: { type: "string", description: "Optional start time as HH:mm (24-hour). Needs due_date." },
+              list: { type: "string", description: "Name of an existing list or category from list_lists. Leave out for the Inbox." },
+              priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
+              repeat: { type: "string", enum: ["daily", "weekdays", "weekly", "monthly", "yearly"], description: "For habits such as a weekly long run. Needs due_date (the first time)." },
+              repeat_every: { type: "integer", minimum: 1, maximum: 12, description: "With repeat: every N days, weeks, months or years. Defaults to 1." },
+            },
+            required: ["title"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["tasks"],
+      additionalProperties: false,
+    },
+    eager_input_streaming: true,
+  },
 ];
 
 export interface ToolOutput {
   content: string;
   isError?: boolean;
+  /** tasks to show as approval cards (propose_tasks only) */
+  proposals?: ProposedTask[];
 }
 
 class InputError extends Error {}
@@ -243,11 +297,72 @@ function getCalendar(input: unknown, snap: Snapshot) {
   return { from, to, events: eventsBetween(snap, from, to) };
 }
 
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const REPEATS: RecurrenceFreq[] = ["daily", "weekdays", "weekly", "monthly", "yearly"];
+
+/** Finds a list or category by name: "List", "Category" or "Category / List", ignoring case. */
+function findPlace(name: string, snap: Snapshot): { listId: string | null; categoryId: string | null; place: string } | null {
+  const want = name.trim().toLowerCase();
+  if (want === "inbox") return { listId: null, categoryId: null, place: "Inbox" };
+  const catName = (id: string) => snap.categories.find((c) => c.id === id)?.name ?? "";
+  for (const l of snap.lists) {
+    const full = `${catName(l.categoryId)} / ${l.name}`;
+    if (l.name.toLowerCase() === want || full.toLowerCase() === want) return { listId: l.id, categoryId: l.categoryId, place: full };
+  }
+  const cat = snap.categories.find((c) => c.name.toLowerCase() === want);
+  return cat ? { listId: null, categoryId: cat.id, place: cat.name } : null;
+}
+
+/** Validates the suggested tasks and resolves list names, so every card can be added as it is. */
+function proposeTasks(input: unknown, snap: Snapshot): ProposedTask[] {
+  const i = obj(input);
+  if (!Array.isArray(i.tasks) || i.tasks.length === 0) throw new InputError("tasks must be a non-empty array.");
+  if (i.tasks.length > MAX_PROPOSALS) throw new InputError(`Suggest at most ${MAX_PROPOSALS} tasks at a time.`);
+  return i.tasks.map((raw, n) => {
+    const at = `tasks[${n}]`;
+    const t = obj(raw);
+    const title = optString(t, "title")?.trim();
+    if (!title) throw new InputError(`${at}.title is required.`);
+    if (title.length > 200) throw new InputError(`${at}.title must be at most 200 characters.`);
+    const dueDate = optDate(t, "due_date") ?? null;
+    if (dueDate && dueDate < snap.today) throw new InputError(`${at}.due_date is in the past. Today is ${snap.today}.`);
+    const dueTime = optString(t, "due_time") ?? null;
+    if (dueTime && !TIME_RE.test(dueTime)) throw new InputError(`${at}.due_time must be HH:mm, such as 18:30.`);
+    if (dueTime && !dueDate) throw new InputError(`${at}.due_time needs a due_date.`);
+    const listName = optString(t, "list");
+    const place = listName ? findPlace(listName, snap) : { listId: null, categoryId: null, place: "Inbox" };
+    if (!place) throw new InputError(`${at}.list: there is no list or category named "${listName}". Call list_lists for the names, or leave list out for the Inbox.`);
+    const priority = optString(t, "priority") ?? "none";
+    const p = PRIORITY.indexOf(priority as (typeof PRIORITY)[number]);
+    if (p < 0) throw new InputError(`${at}.priority must be one of ${PRIORITY.join(", ")}.`);
+    const repeat = optString(t, "repeat");
+    if (repeat && !REPEATS.includes(repeat as RecurrenceFreq)) throw new InputError(`${at}.repeat must be one of ${REPEATS.join(", ")}.`);
+    if (repeat && !dueDate) throw new InputError(`${at}.repeat needs a due_date for the first time.`);
+    const every = optInt(t, "repeat_every", 1, 12) ?? 1;
+    return {
+      title,
+      notes: optString(t, "notes")?.trim() ?? "",
+      dueDate,
+      dueTime,
+      ...place,
+      priority: p as Priority,
+      recurrence: repeat ? { freq: repeat as RecurrenceFreq, interval: every } : null,
+    };
+  });
+}
+
 /** Runs one tool call against the snapshot. Bad input comes back as an error result the model can correct. */
 export function runTool(name: string, input: unknown, snap: Snapshot): ToolOutput {
   try {
     let result: unknown;
     switch (name as ToolName) {
+      case "propose_tasks": {
+        const proposals = proposeTasks(input, snap);
+        return {
+          content: `Shown to the user as ${proposals.length} ${proposals.length === 1 ? "card" : "cards"} with Add and Skip buttons. Nothing has been added: the user decides. Don't list the tasks again in your reply; say in a sentence or two why you suggested them.`,
+          proposals,
+        };
+      }
       case "get_today":
         result = getToday(snap);
         break;

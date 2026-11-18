@@ -133,3 +133,41 @@ describe("get_calendar", () => {
 it("reports unknown tools as errors", () => {
   expect(run("delete_everything")).toMatchObject({ isError: true, content: "Unknown tool: delete_everything" });
 });
+
+describe("propose_tasks", () => {
+  it("resolves lists by name and returns cards without changing anything", () => {
+    const out = runTool(
+      "propose_tasks",
+      {
+        tasks: [
+          { title: "  Review chapter 5  ", due_date: "2026-11-20", due_time: "17:30", list: "exams", priority: "high", notes: "Proofs first" },
+          { title: "Weekend long run", due_date: "2026-11-22", repeat: "weekly", repeat_every: 1, list: "Work" },
+          { title: "Ideas", list: "University / Exams" },
+          { title: "Call mum" },
+        ],
+      },
+      snap,
+    );
+    expect(out.isError).toBeUndefined();
+    expect(out.content).toContain("Nothing has been added");
+    expect(out.proposals).toEqual([
+      { title: "Review chapter 5", notes: "Proofs first", dueDate: "2026-11-20", dueTime: "17:30", listId: "exams", categoryId: "uni", place: "University / Exams", priority: 3, recurrence: null },
+      { title: "Weekend long run", notes: "", dueDate: "2026-11-22", dueTime: null, listId: null, categoryId: "work", place: "Work", priority: 0, recurrence: { freq: "weekly", interval: 1 } },
+      { title: "Ideas", notes: "", dueDate: null, dueTime: null, listId: "exams", categoryId: "uni", place: "University / Exams", priority: 0, recurrence: null },
+      { title: "Call mum", notes: "", dueDate: null, dueTime: null, listId: null, categoryId: null, place: "Inbox", priority: 0, recurrence: null },
+    ]);
+  });
+
+  it("rejects suggestions that couldn't be added as they are", () => {
+    const bad = (task: Record<string, unknown>) => runTool("propose_tasks", { tasks: [task] }, snap);
+    expect(bad({ title: "" })).toMatchObject({ isError: true, content: "tasks[0].title is required." });
+    expect(bad({ title: "Old", due_date: "2026-11-01" })).toMatchObject({ isError: true, content: "tasks[0].due_date is in the past. Today is 2026-11-18." });
+    expect(bad({ title: "Late", due_date: "2026-11-20", due_time: "25:00" })).toMatchObject({ isError: true });
+    expect(bad({ title: "No day", due_time: "10:00" })).toMatchObject({ isError: true, content: "tasks[0].due_time needs a due_date." });
+    expect(bad({ title: "Where", list: "Groceries" }).content).toContain('no list or category named "Groceries"');
+    expect(bad({ title: "Habit", repeat: "weekly" })).toMatchObject({ isError: true });
+    expect(bad({ title: "Meh", priority: "critical" })).toMatchObject({ isError: true });
+    expect(runTool("propose_tasks", { tasks: [] }, snap)).toMatchObject({ isError: true });
+    expect(runTool("propose_tasks", { tasks: Array.from({ length: 16 }, (_, i) => ({ title: `T${i}` })) }, snap)).toMatchObject({ isError: true });
+  });
+});
