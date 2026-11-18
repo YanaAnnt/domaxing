@@ -6,10 +6,26 @@ import { LogoMark } from "./logo";
 
 export const PHRASE = { a: "One day", or: "or", b: "day one.", c: "You decide." };
 
-/** The opening phrase. `still` renders it without entrance animation (used while the app loads). */
-export function SplashPhrase({ still }: { still?: boolean }) {
+// The opening phrase is first drawn by the static page, before the app's code has loaded, and then again by
+// the app. Both play the same entrance animation. The page records when its animation started, and the app's
+// copy continues from that point (a negative animation delay), so the phrase rises once instead of appearing
+// fully and then fading in a second time.
+declare global {
+  interface Window {
+    __splashStartedAt?: number;
+  }
+}
+
+/** Milliseconds since the phrase's entrance animation started on this page load. */
+function splashElapsed(): number {
+  if (typeof window === "undefined" || window.__splashStartedAt === undefined) return 0;
+  return Math.max(0, performance.now() - window.__splashStartedAt);
+}
+
+/** The opening phrase with its entrance animation. `elapsed` (ms) continues an animation that already started. */
+export function SplashPhrase({ elapsed = 0 }: { elapsed?: number }) {
   const anim = (delay: number) =>
-    still ? undefined : ({ animation: `splash-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) ${delay}s both` } as React.CSSProperties);
+    ({ animation: `splash-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) ${delay - elapsed / 1000}s both` }) as React.CSSProperties;
   return (
     <div className="flex flex-col items-center px-8 text-center">
       <div style={anim(0)} className="mb-10 opacity-90">
@@ -33,11 +49,38 @@ export function SplashPhrase({ still }: { still?: boolean }) {
   );
 }
 
-/** Static version shown before the app's code has loaded. */
-export function SplashScreen() {
+/** The same soft canvas as the app, behind the phrase, so the hand-off to the app is seamless. */
+function SplashBackdrop() {
   return (
-    <div className="fixed inset-0 z-[90] grid place-items-center" aria-label="Domaxing: One day or day one. You decide.">
-      <SplashPhrase still />
+    <>
+      <div aria-hidden className="absolute inset-0 bg-[var(--c-bg)]" />
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(55vw 55vh at 6% 0%, var(--g1), transparent 70%), radial-gradient(50vw 50vh at 100% 6%, var(--g2), transparent 70%), radial-gradient(60vw 60vh at 85% 100%, var(--g3), transparent 70%), radial-gradient(50vw 55vh at 0% 100%, var(--g4), transparent 70%)",
+        }}
+      />
+    </>
+  );
+}
+
+/** Shown by the static page before the app's code has loaded. Its animation starts with the first paint. */
+export function SplashScreen() {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useLayoutEffect(() => {
+    // Record when the entrance animation started, so the app's copy can carry on from the same point.
+    const running = ref.current?.getAnimations?.({ subtree: true })[0];
+    const t = running?.currentTime;
+    window.__splashStartedAt = performance.now() - (typeof t === "number" ? t : 0);
+  }, []);
+  return (
+    <div ref={ref} className="fixed inset-0 z-[90] grid place-items-center" aria-label="Domaxing: One day or day one. You decide.">
+      <SplashBackdrop />
+      <div className="relative">
+        <SplashPhrase />
+      </div>
     </div>
   );
 }
@@ -54,6 +97,9 @@ export function OpeningSplash() {
     }
   });
 
+  // How far the static page's animation already got; read once, when the app takes over.
+  const [elapsed] = React.useState(splashElapsed);
+
   const leave = React.useCallback(() => {
     setPhase((p) => (p === "show" ? "leaving" : p));
   }, []);
@@ -66,14 +112,15 @@ export function OpeningSplash() {
       /* private mode */
     }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const t = setTimeout(leave, reduced ? 1500 : 3300);
+    // The phrase stays for the same total time however long loading took, but always at least a moment.
+    const t = setTimeout(leave, Math.max(600, (reduced ? 1500 : 3300) - elapsed));
     const onKey = () => leave();
     window.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(t);
       window.removeEventListener("keydown", onKey);
     };
-  }, [phase, leave]);
+  }, [phase, leave, elapsed]);
 
   React.useEffect(() => {
     if (phase !== "leaving") return;
@@ -91,18 +138,9 @@ export function OpeningSplash() {
         phase === "leaving" && "pointer-events-none scale-[1.03] opacity-0 blur-sm",
       )}
     >
-      {/* the same soft canvas as the app, so the hand-off is seamless */}
-      <div aria-hidden className="absolute inset-0 bg-[var(--c-bg)]" />
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(55vw 55vh at 6% 0%, var(--g1), transparent 70%), radial-gradient(50vw 50vh at 100% 6%, var(--g2), transparent 70%), radial-gradient(60vw 60vh at 85% 100%, var(--g3), transparent 70%), radial-gradient(50vw 55vh at 0% 100%, var(--g4), transparent 70%)",
-        }}
-      />
+      <SplashBackdrop />
       <div className="relative">
-        <SplashPhrase />
+        <SplashPhrase elapsed={elapsed} />
       </div>
     </div>
   );
