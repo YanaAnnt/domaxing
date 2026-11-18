@@ -2,19 +2,20 @@
 
 import * as React from "react";
 import Markdown, { type Components } from "react-markdown";
-import { AlertCircle, ArrowUp, KeyRound, MessageCircle, RotateCcw, Square } from "lucide-react";
+import { AlertCircle, ArrowUp, KeyRound, MessageCircle, RotateCcw, Search, Square } from "lucide-react";
 import { useChat } from "@/lib/ai/chat";
 import type { ChatMessage } from "@/lib/ai/conversation";
 import { modelById } from "@/lib/ai/models";
 import { useAISettings } from "@/lib/ai/settings";
+import { TOOL_LABELS } from "@/lib/ai/tools";
 import { useUI } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
 import { AutoTextarea, Button } from "./ui/primitives";
 
 const EXAMPLES = [
+  "What should I focus on today?",
+  "What's overdue, and what can wait?",
   "I have an exam on Thursday. Help me plan my studying",
-  "Help me break down planning a birthday party",
-  "Make me a simple three-day gym routine",
 ];
 
 /** Chat with the assistant through the user's own Anthropic key. */
@@ -123,6 +124,15 @@ function Bubble({ m, typing }: { m: ChatMessage; typing: boolean }) {
   return (
     // Full width, so a right-to-left reply (Hebrew, Arabic) lines up on the right like the user's own messages.
     <div className="self-stretch pe-6">
+      {m.tools && m.tools.length > 0 && (
+        <div className="mb-1.5 flex flex-wrap items-center gap-1" aria-label="Looked at">
+          {m.tools.map((t) => (
+            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-sunken px-2 py-0.5 text-[11px] text-muted">
+              <Search className="size-3" /> {TOOL_LABELS[t] ?? t}
+            </span>
+          ))}
+        </div>
+      )}
       {m.text ? (
         <div dir="auto" className="text-[15px] leading-relaxed">
           <Markdown components={markdown}>{m.text}</Markdown>
@@ -130,6 +140,7 @@ function Bubble({ m, typing }: { m: ChatMessage; typing: boolean }) {
       ) : (
         typing && <span className="inline-block animate-pulse text-sm text-muted">Thinking…</span>
       )}
+      {m.text && typing && <span className="ms-1 inline-block animate-pulse text-muted">●</span>}
       {m.error && (
         <p role="alert" className="mt-1 flex items-center gap-1.5 text-xs text-danger">
           <AlertCircle className="size-3.5 shrink-0" /> {m.error}
