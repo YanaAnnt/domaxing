@@ -18,6 +18,7 @@ Every pull request adds its change under **Unreleased**. When a version is tagge
 - **Full-screen chat**: the Assistant opens as a clean, full-screen chat with Max, with a greeting in the style of the opening screen, a slim top bar (Brief, New chat, model) and the message box pinned to the bottom. The calendar Planner (briefing, suggestions, next two weeks) moved behind a **Chat / Planner** switch, and the floating + button is hidden on this screen on phones ([#15](https://github.com/YanaAnnt/domaxing/pull/15)).
 
 ### Changed
+- On phones, the active tab in the bottom bar is marked by a **glass bubble** that glides to the tab you tap, stretching a little on the way, in light and dark mode ([#16](https://github.com/YanaAnnt/domaxing/pull/16)).
 - The roadmap is organised by version (v1.1.0 to v2.0.0), with Projects, a daily brief, a Completed section and a Week time grid added to the plan ([#9](https://github.com/YanaAnnt/domaxing/pull/9)).
 - The deploy workflow runs `npm test` before publishing the site ([#1](https://github.com/YanaAnnt/domaxing/pull/1)).
 - Next.js 15 → 16, with `tsconfig.json` updated for the new JSX transform ([#4](https://github.com/YanaAnnt/domaxing/pull/4)).
