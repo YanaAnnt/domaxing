@@ -75,6 +75,7 @@ The parts I am most proud of, and the problems behind them:
 | **Real-world calendars are messy** | ICS parsing with **timezones, DST and recurrence** (ical.js), Google Calendar API and Microsoft Graph, OAuth with **HMAC-signed state**, and an **SSRF guard** that rejects private-network feed URLs. |
 | **Background work without running a server** | `pg_cron` → `pg_net` → a Deno **Edge Function** every 5 minutes: reminders, nudges, daily briefings, calendar refresh and planning, all respecting **quiet hours and a daily push cap**. |
 | **Secrets must never reach the browser** | **Row Level Security** on every table, **column-level grants** that hide OAuth tokens and feed URLs, and all keys stored in **Supabase Vault**, readable only by the service role. |
+| **The code must stay safe after launch** | **CodeQL** scans the app, the edge function and the CI workflows on every pull request and weekly, and **Dependabot** opens grouped update PRs for npm packages and GitHub Actions, which the CI checks like any other change. |
 | **One codebase, three platforms** | The whole frontend exports to **static HTML**. GitHub Actions type-checks, tests and deploys it to GitHub Pages on every push, a service worker makes it an **offline-capable PWA** for iPhone and desktop, and the same build is wrapped by **Electron** into a Windows installer that a tagged release builds and publishes automatically. |
 | **Correctness** | **Vitest** suites cover the planner, timezone/DST handling and the ICS parser. CI type-checks, tests and builds **every pull request** before it can be merged, and runs again before every deploy. TypeScript runs in `strict` mode across the app and the edge function. |
 
@@ -186,6 +187,7 @@ flowchart LR
 | Testing and CI | Vitest, GitHub Actions on every pull request (type-check, tests, build) |
 | Delivery | GitHub Actions → GitHub Pages, installable PWA with a service worker |
 | Desktop | Electron with a private `app://` origin and a sandboxed renderer, packaged by electron-builder into an NSIS installer |
+| Security and maintenance | CodeQL (security-and-quality queries), Dependabot for npm and GitHub Actions |
 
 <br />
 
