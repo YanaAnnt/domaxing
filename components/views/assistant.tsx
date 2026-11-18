@@ -8,12 +8,32 @@ import { useUI } from "@/lib/ui-store";
 import { syncCalendars, useAssistant } from "@/lib/assistant";
 import { addDaysKey, diffFromToday, fromKey, relativeLabel, todayKey, toKey } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { Button } from "../ui/primitives";
+import { Button, Segmented } from "../ui/primitives";
 import { ViewBody, ViewHeader } from "./shared";
 import { AssistantSignIn, BriefingCard, CalendarConnectDialog, SuggestionCard } from "../assistant-ui";
 import { AssistantChat } from "../assistant-chat";
 
+type AssistantTab = "chat" | "planner";
+
+/** The Assistant: a full-screen chat with Max, and the calendar Planner one switch away. */
 export function AssistantView() {
+  const [tab, setTab] = React.useState<AssistantTab>("chat");
+  const waiting = useAssistant((s) => s.suggestions.length);
+  const toggle = (
+    <Segmented<AssistantTab>
+      value={tab}
+      onChange={setTab}
+      options={[
+        { value: "chat", label: "Chat", title: "Chat with Max" },
+        { value: "planner", label: waiting ? `Planner · ${waiting}` : "Planner", title: "Plans from your connected calendars" },
+      ]}
+    />
+  );
+  return tab === "chat" ? <AssistantChat toolbar={toggle} /> : <PlannerView toggle={toggle} />;
+}
+
+/** Calendar-based planning (cloud): the daily briefing, suggestions to approve, and the next two weeks. */
+function PlannerView({ toggle }: { toggle: React.ReactNode }) {
   const signedIn = useSync((s) => !!s.user);
   const ready = useAssistant((s) => s.ready);
   const suggestions = useAssistant((s) => s.suggestions);
@@ -58,28 +78,27 @@ export function AssistantView() {
         title={
           <span className="flex items-center gap-2.5">
             <Sparkles className="size-[26px] text-accent md:size-6" strokeWidth={2.2} />
-            Assistant
+            Planner
           </span>
         }
         subtitle={config && !config.ai && signedIn ? "Smart planning on · add an AI key for deeper plans" : "Plans from your calendar, ready when you are"}
         right={
-          signedIn && (
-            <>
-              {connections.length > 0 && (
+          <>
+            {toggle}
+            {signedIn && connections.length > 0 && (
                 <Button variant="ghost" size="sm" onClick={refresh} disabled={syncing} aria-label="Refresh calendars">
                   {syncing ? <Loader2 className="size-3.5 animate-spin-slow" /> : <RefreshCw className="size-3.5" />}
                   <span className="hidden sm:inline">Refresh</span>
                 </Button>
-              )}
+            )}
+            {signedIn && (
               <Button variant="ghost" size="icon" aria-label="Assistant settings" onClick={() => useUI.getState().setSettingsOpen(true)}>
                 <Settings2 className="size-4" />
               </Button>
-            </>
-          )
+            )}
+          </>
         }
       />
-
-      <AssistantChat />
 
       {!signedIn ? (
         <AssistantSignIn />

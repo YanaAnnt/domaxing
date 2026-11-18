@@ -61,6 +61,8 @@ export function MobileTabBar() {
 
 export function FloatingAdd() {
   const view = useUI((s) => s.view);
+  // The Assistant is a full-screen chat whose message box sits where this button would.
+  if (view.type === "assistant") return null;
   const open = () => {
     haptic(8);
     const d =
