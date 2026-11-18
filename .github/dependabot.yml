@@ -1,0 +1,27 @@
+# Dependabot opens pull requests when a dependency or a GitHub Action has an update.
+# Minor and patch updates are grouped into one weekly PR to keep the noise low;
+# security fixes and major versions still get their own PRs so they can be reviewed on their own.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
