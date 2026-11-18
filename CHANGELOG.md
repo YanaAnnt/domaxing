@@ -13,6 +13,7 @@ Every pull request adds its change under **Unreleased**. When a version is tagge
 - **AI settings** for bringing your own Anthropic API key: paste the key, choose Claude Opus 5.5 (recommended), Sonnet 5.5 or Haiku 5.5, and test the connection without spending tokens. The key is stored only on the device and is never synced or exported ([#8](https://github.com/YanaAnnt/domaxing/pull/8)).
 - **Chat with the assistant** in the Assistant view, using your own key: replies stream in as they are written and show lists and bold text, right-to-left languages line up correctly, and you can stop a reply or start a new chat. The history is kept on the device only and is never synced or exported ([#10](https://github.com/YanaAnnt/domaxing/pull/10)).
 - The chat assistant can **look at your tasks, lists, today's plan and calendar** through four read-only tools (`get_today`, `list_tasks`, `list_lists`, `get_calendar`) that run in the browser on your local data. Each reply shows what it looked at ([#11](https://github.com/YanaAnnt/domaxing/pull/11)).
+- The assistant is now **Max**, with a clean welcome screen and a **Brief me** button: a short brief of today, the load on the days ahead and what to prepare for in the next three months. The calendar tool now covers up to 120 days ([#12](https://github.com/YanaAnnt/domaxing/pull/12)).
 
 ### Changed
 - The roadmap is organised by version (v1.1.0 to v2.0.0), with Projects, a daily brief, a Completed section and a Week time grid added to the plan ([#9](https://github.com/YanaAnnt/domaxing/pull/9)).
