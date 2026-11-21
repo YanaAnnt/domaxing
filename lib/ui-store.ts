@@ -15,6 +15,8 @@ export interface Toast {
 export interface QuickAddDefaults {
   sectionId?: string | null;
   dueDate?: string | null;
+  /** "HH:mm", e.g. from clicking a slot on the Week time grid. */
+  dueTime?: string | null;
   listId?: string | null;
   categoryId?: string | null;
 }

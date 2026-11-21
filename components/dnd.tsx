@@ -9,7 +9,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { useData } from "@/lib/store";
 import { useUI } from "@/lib/ui-store";
 import { between, haptic } from "@/lib/utils";
-import { relativeLabel, todayKey } from "@/lib/dates";
+import { formatTime, relativeLabel, todayKey } from "@/lib/dates";
 import { TaskRowStatic } from "./task-item";
 
 export type DropTarget =
@@ -17,7 +17,11 @@ export type DropTarget =
   | { kind: "category"; id: string }
   | { kind: "inbox" }
   | { kind: "today" }
-  | { kind: "date"; date: string };
+  | { kind: "date"; date: string }
+  /** An hour on the Week time grid: sets the day and the time. */
+  | { kind: "slot"; date: string; time: string }
+  /** The "All day" row on the Week time grid: sets the day and clears the time. */
+  | { kind: "allday"; date: string };
 
 export type DragData =
   | { type: "task"; taskId: string; ids: string[]; containerId: string }
@@ -41,7 +45,14 @@ const collision: CollisionDetection = (args) => {
     return d.type === activeType;
   });
   const targets = containers.filter((c) => (c.data.current as DragData).type === "target");
-  const hit = pointerWithin({ ...args, droppableContainers: targets });
+  // Week time-grid slots scroll inside their own box: skip the ones scrolled out of sight under the pointer.
+  const p = args.pointerCoordinates;
+  const hit = pointerWithin({ ...args, droppableContainers: targets }).filter((h) => {
+    const clip = args.droppableContainers.find((c) => c.id === h.id)?.node.current?.closest("[data-scroll-clip]");
+    if (!clip || !p) return true;
+    const r = clip.getBoundingClientRect();
+    return p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
+  });
   if (hit.length) return hit;
   return closestCenter({ ...args, droppableContainers: containers.filter((c) => (c.data.current as DragData).type !== "target") });
 };
@@ -88,6 +99,16 @@ export function AppDnd({ children }: { children: React.ReactNode }) {
         if (task.dueDate !== t.date) {
           data.updateTask(a.taskId, { dueDate: t.date });
           ui.toast({ message: `Moved to ${relativeLabel(t.date)}` });
+        }
+      } else if (t.kind === "slot") {
+        if (task.dueDate !== t.date || task.dueTime !== t.time) {
+          data.updateTask(a.taskId, { dueDate: t.date, dueTime: t.time });
+          ui.toast({ message: `Moved to ${relativeLabel(t.date)}, ${formatTime(t.time)}` });
+        }
+      } else if (t.kind === "allday") {
+        if (task.dueDate !== t.date || task.dueTime) {
+          data.updateTask(a.taskId, { dueDate: t.date, dueTime: null });
+          ui.toast({ message: `Moved to ${relativeLabel(t.date)}, all day` });
         }
       }
       return;

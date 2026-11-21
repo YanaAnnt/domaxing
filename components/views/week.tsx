@@ -3,7 +3,7 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { useDroppable } from "@dnd-kit/core";
-import { AlertCircle, CalendarRange, Check, ChevronLeft, ChevronRight, Columns3, Inbox, Plus, Rows3 } from "lucide-react";
+import { AlertCircle, CalendarClock, CalendarRange, Check, ChevronLeft, ChevronRight, Columns3, Inbox, Plus, Rows3 } from "lucide-react";
 import { useUI } from "@/lib/ui-store";
 import { useData } from "@/lib/store";
 import { useAllTasks, sortTasks, isVisibleActive } from "@/lib/selectors";
@@ -13,8 +13,10 @@ import type { Task } from "@/lib/types";
 import { Button, Segmented } from "../ui/primitives";
 import { InlineAdd, TaskGroup, ViewBody, ViewHeader } from "./shared";
 import type { DragData } from "../dnd";
+import { TimeGrid } from "./time-grid";
 
-type WeekMode = "board" | "day";
+/** "grid": hours down the side · "board": a column of tasks per day · "day": one day as a list. */
+type WeekMode = "grid" | "board" | "day";
 const MODE_KEY = "domaxing:week-mode";
 /** Width of #main at which seven columns fit comfortably side by side. */
 const BOARD_MIN_WIDTH = 1040;
@@ -50,11 +52,12 @@ export function WeekView() {
   const today = todayKey();
   const [selected, setSelected] = React.useState(today);
   const [dir, setDir] = React.useState<-1 | 0 | 1>(0);
-  const [pref, setPref] = React.useState<WeekMode>("board");
+  const [pref, setPref] = React.useState<WeekMode>("grid");
 
   React.useEffect(() => {
     try {
-      if (localStorage.getItem(MODE_KEY) === "day") setPref("day");
+      const saved = localStorage.getItem(MODE_KEY);
+      if (saved === "board" || saved === "day") setPref(saved);
     } catch {
       /* storage unavailable */
     }
@@ -70,7 +73,9 @@ export function WeekView() {
 
   const mainWidth = useMainWidth();
   const canBoard = mainWidth >= BOARD_MIN_WIDTH;
-  const mode: WeekMode = canBoard ? pref : "day";
+  // The board needs seven columns of room; on narrower screens the time grid shows the picked day.
+  const mode: WeekMode = canBoard ? pref : pref === "grid" ? "grid" : "day";
+  const wideLayout = canBoard && mode !== "day";
 
   const start = toKey(weekStart(fromKey(selected), weekStartsOn));
   const days = React.useMemo(() => Array.from({ length: 7 }, (_, i) => addDaysKey(start, i)), [start]);
@@ -107,7 +112,7 @@ export function WeekView() {
   const anim = dir > 0 ? "animate-week-next" : dir < 0 ? "animate-week-prev" : "animate-fade-in";
 
   return (
-    <ViewBody wide={mode === "board"} className={cn(mode === "board" && "max-w-[1500px] md:px-6")}>
+    <ViewBody wide={wideLayout} className={cn(wideLayout && "max-w-[1500px] md:px-6")}>
       <ViewHeader
         title={
           <span className="flex items-center gap-2.5">
@@ -118,17 +123,16 @@ export function WeekView() {
         subtitle={`${format(fromKey(days[0]), "MMM d")} - ${format(fromKey(days[6]), "MMM d, yyyy")} · ${weekOpen} open`}
         right={
           <>
-            {canBoard && (
-              <Segmented
-                value={mode}
-                onChange={changeMode}
-                className="mr-1"
-                options={[
-                  { value: "board", label: <><Columns3 className="size-3.5" /> Week</>, title: "Show all seven days" },
-                  { value: "day", label: <><Rows3 className="size-3.5" /> Day</>, title: "Focus on one day" },
-                ]}
-              />
-            )}
+            <Segmented
+              value={mode}
+              onChange={changeMode}
+              className="mr-1"
+              options={[
+                { value: "grid" as const, label: <><CalendarClock className="size-3.5" /><span className="hidden sm:inline">Time</span></>, title: "Show tasks at their time" },
+                ...(canBoard ? [{ value: "board" as const, label: <><Columns3 className="size-3.5" /><span className="hidden sm:inline">Board</span></>, title: "A column of tasks for each day" }] : []),
+                { value: "day" as const, label: <><Rows3 className="size-3.5" /><span className="hidden sm:inline">List</span></>, title: "One day as a list" },
+              ]}
+            />
             <div className="flex items-center rounded-lg bg-sunken p-0.5">
               <Button variant="ghost" size="icon-sm" aria-label="Previous week" onClick={() => shiftWeek(-1)}>
                 <ChevronLeft className="size-4" />
@@ -149,7 +153,22 @@ export function WeekView() {
         }
       />
 
-      {mode === "board" ? (
+      {mode === "grid" && canBoard ? (
+        <>
+          <p className="-mt-4 mb-4 text-xs text-faint">Click an empty slot to add a task at that time · drag a task to move it.</p>
+          <div key={start} className={anim}>
+            <TimeGrid days={days} byDay={byDay} showHeader />
+          </div>
+        </>
+      ) : mode === "grid" ? (
+        <>
+          <WeekStrip days={days} selected={selected} byDay={byDay} onPick={select} onShift={shiftWeek} anim={anim} />
+          <div key={selected} className="animate-fade-in">
+            <TimeGrid days={[selected]} byDay={byDay} showHeader={false} />
+          </div>
+          <p className="mt-2 px-3 text-xs text-faint">Tap an empty slot to add a task at that time.</p>
+        </>
+      ) : mode === "board" ? (
         <>
           <p className="-mt-4 mb-4 text-xs text-faint">Drag tasks between days to re-plan · double-click a day to add a task.</p>
           <div key={start} className={cn("grid grid-cols-7 gap-2", anim)}>
@@ -166,7 +185,7 @@ export function WeekView() {
       )}
 
       {(overdue.length > 0 || unscheduled.length > 0) && (
-        <div className={cn("mt-8", mode === "board" && "grid gap-x-6 lg:grid-cols-2")}>
+        <div className={cn("mt-8", wideLayout && "grid gap-x-6 lg:grid-cols-2")}>
           {overdue.length > 0 && (
             <TaskGroup
               title={<span className="flex items-center gap-1.5"><AlertCircle className="size-3.5" /> Overdue</span>}

@@ -90,7 +90,7 @@ The parts I am most proud of, and the problems behind them:
 - Unlimited **categories** (Work, University, Personal, Fitness...) with their own color and icon
 - **Lists** inside categories and **sections** inside lists. Tasks can also live in a category or the Inbox
 - Smart views: **Today**, **Assistant**, **Upcoming**, **Inbox**, **Week**, **All Tasks** (with filters), **Completed**, **Progress**
-- An interactive **Week planner**: drag tasks between days, double-click a day to add one, swipe between weeks on mobile
+- An interactive **Week planner** with three layouts: a **Time** grid (tasks sit at their hour, tasks without a time sit in an All day row, click an empty slot to add a task at that day and time, drag a task to a new slot), a **Board** with a column per day, and a one-day **List**. Swipe between weeks on mobile
 - Rich tasks: notes, due date and time, 4 priority levels, subtasks, tags, reminders, recurrence, duplicate, undo and **Focus mode**
 - **Drag and drop** everywhere: reorder categories, lists and tasks, or drop a task on the sidebar to move it
 - **Natural-language Quick Add**: `Call Anna tomorrow at 3pm !high #calls @personal`
@@ -305,7 +305,7 @@ Domaxing is growing into an **AI assistant you can talk to**: tell it your plans
 - [x] The assistant can suggest tasks, each one shown as a card you add or skip ([#13](https://github.com/YanaAnnt/domaxing/pull/13))
 - [x] Daily brief: tap **Brief me** and Max sums up today, the days ahead and what to prepare for ([#12](https://github.com/YanaAnnt/domaxing/pull/12), [#13](https://github.com/YanaAnnt/domaxing/pull/13))
 - [x] A collapsible **Completed** section at the bottom of every list, category and the Inbox ([#18](https://github.com/YanaAnnt/domaxing/pull/18))
-- [ ] Week as a time grid: tasks sit at their time, and clicking an empty slot adds a task at that day and hour
+- [x] Week as a time grid: tasks sit at their time, and clicking an empty slot adds a task at that day and hour ([#19](https://github.com/YanaAnnt/domaxing/pull/19))
 - [ ] Reminders as desktop and browser notifications
 - [ ] End-to-end tests with Playwright for the main flows, run in CI
 

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, CalendarDays, Clock, Flag, Hash, Inbox, Repeat, Tag } from "lucide-react";
+import { ArrowUp, CalendarDays, Clock, Flag, Hash, Inbox, Repeat, Tag, X } from "lucide-react";
 import type { ParsedTask } from "@/lib/parse";
 import { parseQuickAdd } from "@/lib/parse";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,7 @@ import { useUI } from "@/lib/ui-store";
 import { useData } from "@/lib/store";
 import { useCategories, useLists } from "@/lib/selectors";
 import { PRIORITIES, priorityColor } from "@/lib/constants";
-import { relativeLabel } from "@/lib/dates";
+import { formatTime, relativeLabel } from "@/lib/dates";
 import type { Priority } from "@/lib/types";
 import { Dialog, DialogContent, Popover, PopoverContent, PopoverTrigger, Menu, MenuContent, MenuItem, MenuTrigger } from "./ui/primitives";
 import { DatePickerPanel } from "./date-picker";
@@ -41,6 +41,7 @@ export function QuickAddDialog() {
   const categories = useCategories();
   const [title, setTitle] = React.useState("");
   const [dueDate, setDueDate] = React.useState<string | null>(null);
+  const [dueTime, setDueTime] = React.useState<string | null>(null);
   const [priority, setPriority] = React.useState<Priority>(0);
   const [target, setTarget] = React.useState<{ listId: string | null; categoryId: string | null }>({ listId: null, categoryId: null });
   const [dateOpen, setDateOpen] = React.useState(false);
@@ -50,6 +51,7 @@ export function QuickAddDialog() {
     if (open) {
       setTitle("");
       setDueDate(defaults?.dueDate ?? null);
+      setDueTime(defaults?.dueTime ?? null);
       setPriority(0);
       setTarget({ listId: defaults?.listId ?? null, categoryId: defaults?.categoryId ?? null });
     }
@@ -57,6 +59,8 @@ export function QuickAddDialog() {
 
   const parsed = React.useMemo(() => parseQuickAdd(title, lists, categories), [title, lists, categories]);
   const effDate = parsed.dueDate !== undefined ? parsed.dueDate : dueDate;
+  // A time needs a date: typed times win, then the slot the dialog was opened from.
+  const effTime = effDate ? parsed.dueTime ?? dueTime : null;
   const effPriority = parsed.priority ?? priority;
   const effList = parsed.listId !== undefined ? parsed.listId : target.listId;
   const effCat = parsed.categoryId !== undefined ? parsed.categoryId : target.categoryId;
@@ -67,7 +71,7 @@ export function QuickAddDialog() {
     const t = useData.getState().addTask({
       title: parsed.title,
       dueDate: effDate ?? null,
-      dueTime: parsed.dueTime ?? null,
+      dueTime: effTime ?? null,
       priority: effPriority,
       tags: parsed.tags,
       listId: effList ?? null,
@@ -77,7 +81,7 @@ export function QuickAddDialog() {
     setTitle("");
     if (!keepOpen) close();
     useUI.getState().toast({
-      message: `Added to ${effDate ? relativeLabel(effDate) : effList ? lists.find((l) => l.id === effList)?.name : effCat ? categories.find((c) => c.id === effCat)?.name : "Inbox"}`,
+      message: `Added to ${effDate ? relativeLabel(effDate) + (effTime ? `, ${formatTime(effTime)}` : "") : effList ? lists.find((l) => l.id === effList)?.name : effCat ? categories.find((c) => c.id === effCat)?.name : "Inbox"}`,
       actionLabel: "Open",
       onAction: () => useUI.getState().openDetail(t.id),
     });
@@ -125,6 +129,11 @@ export function QuickAddDialog() {
                 <DatePickerPanel value={effDate ?? null} onChange={setDueDate} onDone={() => setDateOpen(false)} />
               </PopoverContent>
             </Popover>
+            {effTime && !parsed.dueTime && (
+              <Chip active icon={<Clock className="size-3.5" />} onClick={() => setDueTime(null)} title="Remove the time" aria-label={`Time ${formatTime(effTime)}, remove`}>
+                {formatTime(effTime)} <X className="ml-0.5 inline size-3 opacity-60" />
+              </Chip>
+            )}
             <Menu>
               <MenuTrigger asChild>
                 <Chip active={effPriority > 0} icon={<Flag className="size-3.5" style={{ color: effPriority ? priorityColor(effPriority) : undefined }} />}>
