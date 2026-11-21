@@ -7,6 +7,7 @@ Every pull request adds its change under **Unreleased**. When a version is tagge
 ## [Unreleased]
 
 ### Added
+- **Week as a time grid**: a new **Time** layout, now the default, shows the week with hours down the side. Tasks sit at their time, side by side when they overlap; tasks without a time sit in an **All day** row; a red line marks the current time. Click an empty slot to add a task at that day and time (to the half hour), or drag a task to another slot or to All day. On a phone it shows the picked day under the day strip. The column **Board** and one-day **List** layouts are still there ([#19](https://github.com/YanaAnnt/domaxing/pull/19)).
 - A collapsible **Completed** section at the bottom of every list, category and the Inbox, with the most recently completed tasks first. It replaces the old "Show completed" menu option, which mixed done tasks in with open ones. The setting in Settings → Preferences now decides whether the section starts open ([#18](https://github.com/YanaAnnt/domaxing/pull/18)).
 - Unit tests with Vitest for the planner, time zones and the ICS parser, and a CI workflow that type-checks, tests and builds every pull request ([#1](https://github.com/YanaAnnt/domaxing/pull/1)).
 - CodeQL security scanning of the code and the workflows, and weekly Dependabot updates for npm packages and GitHub Actions ([#2](https://github.com/YanaAnnt/domaxing/pull/2)).
