@@ -303,8 +303,8 @@ Domaxing is growing into an **AI assistant you can talk to**: tell it your plans
 - [x] Chat with the assistant, with streamed replies and history saved on your device ([#10](https://github.com/YanaAnnt/domaxing/pull/10))
 - [x] The assistant can read your tasks, today's plan and your calendar ([#11](https://github.com/YanaAnnt/domaxing/pull/11))
 - [x] The assistant can suggest tasks, each one shown as a card you add or skip ([#13](https://github.com/YanaAnnt/domaxing/pull/13))
-- [ ] Daily brief: each morning the assistant sums up what today holds and what to do first
-- [ ] A collapsible **Completed** section at the bottom of every list and category
+- [x] Daily brief: tap **Brief me** and Max sums up today, the days ahead and what to prepare for ([#12](https://github.com/YanaAnnt/domaxing/pull/12), [#13](https://github.com/YanaAnnt/domaxing/pull/13))
+- [x] A collapsible **Completed** section at the bottom of every list, category and the Inbox ([#18](https://github.com/YanaAnnt/domaxing/pull/18))
 - [ ] Week as a time grid: tasks sit at their time, and clicking an empty slot adds a task at that day and hour
 - [ ] Reminders as desktop and browser notifications
 - [ ] End-to-end tests with Playwright for the main flows, run in CI

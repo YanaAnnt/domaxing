@@ -262,6 +262,28 @@ export function TaskGroup({
   );
 }
 
+/**
+ * The collapsible "Completed" section at the bottom of a list, category or the Inbox.
+ * It starts closed unless "Open the Completed section" is on in Settings.
+ */
+export function CompletedSection({ tasks, containerId, showList }: { tasks: Task[]; containerId: string; showList?: boolean }) {
+  const openByDefault = useData((s) => s.settings.showCompletedInLists);
+  if (tasks.length === 0) return null;
+  return (
+    <div className="mt-2 opacity-90" data-completed-section>
+      <TaskGroup
+        title={<span className="text-muted">Completed</span>}
+        count={tasks.length}
+        tasks={tasks}
+        containerId={containerId}
+        showList={showList}
+        collapsible
+        defaultCollapsed={!openByDefault}
+      />
+    </div>
+  );
+}
+
 function GroupTitle({ children, tone }: { children: React.ReactNode; tone?: "danger" | "accent" }) {
   return (
     <h2 className={cn("text-[13px] font-semibold tracking-tight text-fg", tone === "danger" && "text-danger", tone === "accent" && "text-accent")}>

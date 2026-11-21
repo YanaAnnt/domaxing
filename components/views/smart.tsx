@@ -5,13 +5,13 @@ import { format } from "date-fns";
 import { useDroppable } from "@dnd-kit/core";
 import { CalendarClock, CheckCircle2, Inbox as InboxIcon, Layers, PartyPopper, Search, Sun, X } from "lucide-react";
 import { useUI } from "@/lib/ui-store";
-import { useAllTasks, useCategories, sortTasks, isVisibleActive, matchesQuery } from "@/lib/selectors";
+import { useAllTasks, useCategories, sortTasks, isVisibleActive, matchesQuery, completedNewestFirst } from "@/lib/selectors";
 import { addDaysKey, diffFromToday, fromKey, relativeLabel, todayKey, toKey } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { PRIORITIES } from "@/lib/constants";
 import type { Task } from "@/lib/types";
 import { Button, Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuTrigger } from "../ui/primitives";
-import { EmptyState, InlineAdd, SortMenu, TaskGroup, ViewBody, ViewHeader, useSortMode } from "./shared";
+import { CompletedSection, EmptyState, InlineAdd, SortMenu, TaskGroup, ViewBody, ViewHeader, useSortMode } from "./shared";
 import { CategoryIcon } from "../list-picker";
 import type { DragData } from "../dnd";
 import { ProgressRing } from "./progress";
@@ -164,6 +164,9 @@ export function InboxView() {
   const active = useActive();
   const sort = useSortMode("inbox");
   const tasks = sortTasks(active.filter((t) => !t.categoryId), sort);
+  const all = useAllTasks();
+  const completing = useUI((s) => s.completing);
+  const done = completedNewestFirst(all.filter((t) => !t.categoryId), completing);
   return (
     <ViewBody>
       <ViewHeader
@@ -177,6 +180,7 @@ export function InboxView() {
         right={<SortMenu viewKey="inbox" />}
       />
       <TaskGroup tasks={tasks} containerId="inbox" sortable={sort === "manual"} showList={false} footer={<InlineAdd defaults={{}} placeholder="Capture a thought" />} />
+      <CompletedSection tasks={done} containerId="done-inbox" />
       {tasks.length === 0 && (
         <EmptyState
           icon={<InboxIcon className="size-7" />}
