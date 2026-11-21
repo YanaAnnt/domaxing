@@ -148,7 +148,7 @@ export function SettingsDialog() {
             <Row label="Week starts on">
               <Segmented value={settings.weekStartsOn} onChange={(v) => update({ weekStartsOn: v })} options={[{ value: 1, label: "Monday" }, { value: 0, label: "Sunday" }]} />
             </Row>
-            <Row label="Show completed in lists">
+            <Row label="Open the Completed section" hint="Lists, categories and the Inbox show completed tasks at the bottom">
               <Toggle checked={settings.showCompletedInLists} onChange={(v) => update({ showCompletedInLists: v })} />
             </Row>
             {!sync.user && <Row label="Notifications" hint={perm === "unsupported" ? "Not supported here. On iPhone, add Domaxing to your Home Screen first." : perm === "denied" ? "Blocked in browser settings" : undefined}>

@@ -7,6 +7,7 @@ Every pull request adds its change under **Unreleased**. When a version is tagge
 ## [Unreleased]
 
 ### Added
+- A collapsible **Completed** section at the bottom of every list, category and the Inbox, with the most recently completed tasks first. It replaces the old "Show completed" menu option, which mixed done tasks in with open ones. The setting in Settings → Preferences now decides whether the section starts open ([#18](https://github.com/YanaAnnt/domaxing/pull/18)).
 - Unit tests with Vitest for the planner, time zones and the ICS parser, and a CI workflow that type-checks, tests and builds every pull request ([#1](https://github.com/YanaAnnt/domaxing/pull/1)).
 - CodeQL security scanning of the code and the workflows, and weekly Dependabot updates for npm packages and GitHub Actions ([#2](https://github.com/YanaAnnt/domaxing/pull/2)).
 - A phased roadmap in the README, this changelog, and a pull request template ([#6](https://github.com/YanaAnnt/domaxing/pull/6)).

@@ -7,11 +7,11 @@ import {
 } from "lucide-react";
 import { useUI } from "@/lib/ui-store";
 import { useData } from "@/lib/store";
-import { useAllTasks, useCategories, useListsByCategory, sortTasks, isVisibleActive } from "@/lib/selectors";
+import { useAllTasks, useCategories, useListsByCategory, sortTasks, isVisibleActive, completedNewestFirst } from "@/lib/selectors";
 import { cn } from "@/lib/utils";
 import { deleteCategoryWithUndo, deleteListWithUndo } from "@/lib/actions";
 import { Button, Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "../ui/primitives";
-import { EmptyState, InlineAdd, SortMenu, TaskGroup, ViewBody, ViewHeader, useSortMode } from "./shared";
+import { CompletedSection, EmptyState, InlineAdd, SortMenu, TaskGroup, ViewBody, ViewHeader, useSortMode } from "./shared";
 import { CategoryIcon } from "../list-picker";
 import { useCounts } from "./smart";
 import { SyncBadge } from "../sync-badge";
@@ -23,13 +23,15 @@ export function CategoryView({ id }: { id: string }) {
   const lists = useListsByCategory()[id] ?? [];
   const all = useAllTasks();
   const completing = useUI((s) => s.completing);
-  const showCompleted = useData((s) => s.settings.showCompletedInLists);
   const sort = useSortMode(`category:${id}`);
   if (!category || category.deleted) return <MissingView />;
 
-  const visible = (t: (typeof all)[number]) => showCompleted || isVisibleActive(t, completing);
+  // Open tasks are grouped by list; completed ones collect in one Completed section at the bottom.
+  const visible = (t: (typeof all)[number]) => isVisibleActive(t, completing);
   const loose = sortTasks(all.filter((t) => t.categoryId === id && !t.listId && visible(t)), sort);
   const total = all.filter((t) => t.categoryId === id && !t.completed).length;
+  const listIds = new Set(lists.map((l) => l.id));
+  const done = completedNewestFirst(all.filter((t) => (t.listId ? listIds.has(t.listId) : t.categoryId === id)), completing);
 
   return (
     <ViewBody>
@@ -71,7 +73,8 @@ export function CategoryView({ id }: { id: string }) {
       >
         <ListPlus className="size-4" /> New list
       </button>
-      {lists.length === 0 && loose.length === 0 && (
+      <CompletedSection tasks={done} containerId={`done-cat-${id}`} showList />
+      {lists.length === 0 && loose.length === 0 && done.length === 0 && (
         <EmptyState icon={<CategoryIcon icon={category.icon} color={category.color} className="size-7" />} title={`Nothing in ${category.name} yet`} body="Add tasks directly, or create lists to group them, like “Projects” or “Errands”." />
       )}
     </ViewBody>
@@ -80,7 +83,6 @@ export function CategoryView({ id }: { id: string }) {
 
 function CategoryMenu({ id }: { id: string }) {
   const ui = useUI.getState();
-  const showCompleted = useData((s) => s.settings.showCompletedInLists);
   return (
     <Menu>
       <MenuTrigger asChild>
@@ -91,9 +93,6 @@ function CategoryMenu({ id }: { id: string }) {
       <MenuContent>
         <MenuItem icon={<Pencil />} onSelect={() => ui.setCategoryDialog({ mode: "edit", id })}>Edit category</MenuItem>
         <MenuItem icon={<ListPlus />} onSelect={() => ui.setListDialog({ mode: "create", categoryId: id })}>New list</MenuItem>
-        <MenuItem icon={<CheckCircle2 />} onSelect={() => useData.getState().updateSettings({ showCompletedInLists: !showCompleted })}>
-          {showCompleted ? "Hide completed" : "Show completed"}
-        </MenuItem>
         <MenuSeparator />
         <MenuItem danger icon={<Trash2 />} onSelect={() => deleteCategoryWithUndo(id)}>Delete category</MenuItem>
       </MenuContent>
@@ -107,11 +106,11 @@ export function ListView({ id }: { id: string }) {
   const category = useData((s) => (list ? s.categories[list.categoryId] : undefined));
   const all = useAllTasks();
   const completing = useUI((s) => s.completing);
-  const showCompleted = useData((s) => s.settings.showCompletedInLists);
   const sort = useSortMode(`list:${id}`);
   const [addingSection, setAddingSection] = React.useState(false);
   if (!list || list.deleted || !category) return <MissingView />;
-  const tasks = sortTasks(all.filter((t) => t.listId === id && (showCompleted || isVisibleActive(t, completing))), sort);
+  const tasks = sortTasks(all.filter((t) => t.listId === id && isVisibleActive(t, completing)), sort);
+  const done = completedNewestFirst(all.filter((t) => t.listId === id), completing);
   const sections = list.sections ?? [];
   const sectionIds = new Set(sections.map((s) => s.id));
   const loose = tasks.filter((t) => !t.sectionId || !sectionIds.has(t.sectionId));
@@ -141,9 +140,6 @@ export function ListView({ id }: { id: string }) {
               <MenuContent>
                 <MenuItem icon={<Pencil />} onSelect={() => ui.setListDialog({ mode: "edit", id })}>Rename or move</MenuItem>
                 <MenuItem icon={<Rows3 />} onSelect={() => setAddingSection(true)}>Add section</MenuItem>
-                <MenuItem icon={<CheckCircle2 />} onSelect={() => useData.getState().updateSettings({ showCompletedInLists: !showCompleted })}>
-                  {showCompleted ? "Hide completed" : "Show completed"}
-                </MenuItem>
                 <MenuSeparator />
                 <MenuItem danger icon={<Trash2 />} onSelect={() => deleteListWithUndo(id)}>Delete list</MenuItem>
               </MenuContent>
@@ -177,7 +173,8 @@ export function ListView({ id }: { id: string }) {
           <Rows3 className="size-4" /> New section
         </button>
       )}
-      {tasks.length === 0 && !sections.length && <EmptyState icon={<Hash className="size-7" />} title="This list is empty" body="Add your first task above. Press Enter to save, and keep typing." />}
+      <CompletedSection tasks={done} containerId={`done-list-${id}`} />
+      {tasks.length === 0 && !sections.length && done.length === 0 && <EmptyState icon={<Hash className="size-7" />} title="This list is empty" body="Add your first task above. Press Enter to save, and keep typing." />}
     </ViewBody>
   );
 }

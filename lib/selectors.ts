@@ -39,6 +39,16 @@ export function useAllTasks(): Task[] {
   return useMemo(() => Object.values(tasks).filter((t) => !t.deleted), [tasks]);
 }
 
+/**
+ * Completed tasks for a "Completed" section, most recently completed first.
+ * Tasks still animating out of the open list (`completing`) are left out until they have gone.
+ */
+export function completedNewestFirst(tasks: Task[], completing: Record<string, true> = {}): Task[] {
+  return tasks
+    .filter((t) => t.completed && !completing[t.id])
+    .sort((a, b) => ((a.completedAt ?? "") < (b.completedAt ?? "") ? 1 : (a.completedAt ?? "") > (b.completedAt ?? "") ? -1 : 0));
+}
+
 /** Tasks counted as "active": not completed, or completed but still animating out. */
 export function isVisibleActive(t: Task, completing: Record<string, true>) {
   return !t.completed || !!completing[t.id];
